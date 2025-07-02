@@ -13,11 +13,11 @@ val envProps = Properties().apply {
 }
 
 android {
-    namespace = "com.cicero.igtools"
+    namespace = "com.cicero.socialtools"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.cicero.igtools"
+        applicationId = "com.cicero.socialtools"
         minSdk = 26
         targetSdk = 34
         versionCode = 1

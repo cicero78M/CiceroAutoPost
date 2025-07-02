@@ -1,4 +1,4 @@
-package com.cicero.igtools
+package com.cicero.socialtools
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -318,7 +318,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     .setOAuthConsumerSecret(BuildConfig.TWITTER_CONSUMER_SECRET)
                     .build()
                 twitter = TwitterFactory(config).instance
-                val reqToken = twitter?.getOAuthRequestToken("igtools://twitter-callback")
+                val reqToken = twitter?.getOAuthRequestToken("socialtools://twitter-callback")
                 if (reqToken != null) {
                     TwitterAuthManager.saveRequestToken(requireContext(), reqToken)
                 }
@@ -880,7 +880,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     }
 
     private fun downloadMedia(post: PostInfo): List<File> {
-        val dir = File(requireContext().getExternalFilesDir(null), "CiceroReposterApp")
+        val dir = File(requireContext().getExternalFilesDir(null), "SocialToolsApp")
         if (!dir.exists()) dir.mkdirs()
         val files = mutableListOf<File>()
         if (post.isVideo && post.videoUrl != null) {

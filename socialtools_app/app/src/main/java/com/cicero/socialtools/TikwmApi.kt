@@ -1,4 +1,4 @@
-package com.cicero.igtools
+package com.cicero.socialtools
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

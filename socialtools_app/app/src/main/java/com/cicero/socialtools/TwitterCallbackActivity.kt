@@ -1,4 +1,4 @@
-package com.cicero.igtools
+package com.cicero.socialtools
 
 import android.os.Bundle
 import android.widget.Toast

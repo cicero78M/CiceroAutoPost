@@ -1,6 +1,6 @@
 # CiceroAutoPost
 
-This repository contains `IgToolsApp`, a Kotlin-based Android Studio project extracted from the original `pegiat_medsos_apps` code.
+This repository contains `SocialToolsApp`, a Kotlin-based Android Studio project extracted from the original `pegiat_medsos_apps` code.
 Binary assets such as images have been removed, so the project uses simple vector placeholders for launcher and UI icons.
 The Gradle wrapper JAR is also excluded to keep the repository free of binary
 artifacts. Running `./gradlew` will automatically download the required
@@ -21,6 +21,6 @@ These values will be read by Gradle when building the app.
 To build the app:
 
 ```bash
-cd igtools_app
+cd socialtools_app
 ./gradlew assembleDebug
 ```
