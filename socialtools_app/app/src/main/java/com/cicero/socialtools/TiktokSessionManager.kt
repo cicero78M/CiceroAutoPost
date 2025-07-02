@@ -1,4 +1,4 @@
-package com.cicero.igtools
+package com.cicero.socialtools
 
 import android.content.Context
 import androidx.core.content.edit

@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "IgToolsApp"
+rootProject.name = "SocialToolsApp"
 include(":app")
