@@ -48,10 +48,6 @@ import twitter4j.Twitter
 import twitter4j.TwitterFactory
 import twitter4j.auth.RequestToken
 import twitter4j.conf.ConfigurationBuilder
-import com.cicero.repostapp.BuildConfig
-import com.cicero.repostapp.TwitterAuthManager
-import com.cicero.repostapp.TikwmApi
-import com.cicero.repostapp.TiktokSessionManager
 import java.io.File
 import java.util.concurrent.Callable
 

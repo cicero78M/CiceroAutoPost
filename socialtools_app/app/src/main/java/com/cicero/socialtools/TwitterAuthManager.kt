@@ -8,7 +8,6 @@ import twitter4j.auth.AccessToken
 import twitter4j.auth.RequestToken
 import twitter4j.conf.ConfigurationBuilder
 import twitter4j.TwitterFactory
-import com.cicero.repostapp.BuildConfig
 
 object TwitterAuthManager {
 
