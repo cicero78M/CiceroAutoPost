@@ -10,28 +10,17 @@
         android:layout_height="wrap_content">
 
         <ImageView
-            android:id="@+id/image_cover"
-            android:layout_width="0dp"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/cicero_banner"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:contentDescription="@string/todo" />
-
-        <ImageView
             android:id="@+id/image_avatar"
             android:layout_width="110dp"
             android:layout_height="110dp"
-            android:layout_marginTop="-55dp"
+            android:layout_marginTop="16dp"
             android:background="@drawable/avatar_background"
             android:contentDescription="@string/todo"
             android:scaleType="centerCrop"
             android:src="@drawable/profile_avatar_placeholder"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/image_cover"
+            app:layout_constraintTop_toTopOf="parent"
             tools:ignore="ImageContrastCheck" />
 
         <ImageView
