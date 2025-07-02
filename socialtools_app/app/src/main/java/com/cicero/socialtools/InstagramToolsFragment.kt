@@ -86,9 +86,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var twitterUsernameView: TextView
     private lateinit var tiktokImage: ImageView
     private lateinit var tiktokUsernameView: TextView
-    private lateinit var targetLinkInput1: EditText
-    private lateinit var targetLinkInput2: EditText
-    private lateinit var targetLinkInput3: EditText
+    private lateinit var targetLinkInput: EditText
     private var twitter: Twitter? = null
     private var twitterRequestToken: RequestToken? = null
     private val repostedIds = mutableSetOf<String>()
@@ -131,9 +129,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         tiktokImage = tiktokContainer.findViewById(R.id.image_tiktok)
         tiktokUsernameView = tiktokContainer.findViewById(R.id.text_tiktok_username)
         tiktokImage.setOnClickListener { showTiktokDialog() }
-        targetLinkInput1 = view.findViewById(R.id.input_target_link1)
-        targetLinkInput2 = view.findViewById(R.id.input_target_link2)
-        targetLinkInput3 = view.findViewById(R.id.input_target_link3)
+        targetLinkInput = view.findViewById(R.id.input_target_link)
 
         delaySeekBar = view.findViewById(R.id.seekbar_delay)
         delayText = view.findViewById(R.id.text_delay_value)
@@ -167,29 +163,18 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         fetchTargetAccount()
 
         startButton.setOnClickListener {
-            val targets = listOf(
-                targetLinkInput1.text.toString().trim(),
-                targetLinkInput2.text.toString().trim(),
-                targetLinkInput3.text.toString().trim()
-            ).filter { it.isNotBlank() }
-
-            if (targets.isEmpty()) {
+            val target = targetLinkInput.text.toString().trim()
+            if (target.isBlank()) {
                 Toast.makeText(requireContext(), "Link target wajib diisi", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
+            targetUsername = parseUsername(target)
 
             val doLike = likeCheckbox.isChecked
             val doRepost = repostCheckbox.isChecked
             val doComment = commentCheckbox.isChecked
-
             if (doLike || doRepost || doComment) {
-                if (targets.size == 1) {
-                    targetUsername = parseUsername(targets[0])
-                    fetchTodayPosts(doLike, doRepost, doComment)
-                } else {
-                    val names = targets.map { parseUsername(it) }
-                    fetchTodayPostsMulti(names, doLike)
-                }
+                fetchTodayPosts(doLike, doRepost, doComment)
             } else {
                 Toast.makeText(requireContext(), "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
             }
@@ -255,8 +240,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 withContext(Dispatchers.Main) {
                     val message = e.message ?: e.toString()
                     Toast.makeText(requireContext(), "Error: $message", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
-
+    }
 
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -314,8 +301,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 checkSubscriptionStatus(info?.username)
                 } catch (_: Exception) {
                     // ignore invalid session
+                }
+            }
         }
-
+    }
 
     private fun startTwitterLogin() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
@@ -657,177 +646,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 withContext(Dispatchers.Main) {
                     launchLogAndLikes(client, posts, doLike, doRepost, doComment)
                 }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                appendLog("Error: ${e.message}")
-            }
-        }
-    }
-
-    private fun fetchTodayPostsMulti(targets: List<String>, doLike: Boolean) {
-        appendLog(
-            ">>> Booting IG automation engine...",
-            animate = true
-        )
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val client = IGClient.deserialize(clientFile, cookieFile)
-                val postsMap = mutableMapOf<String, MutableList<PostInfo>>()
-                for (name in targets) {
-                    withContext(Dispatchers.Main) {
-                        appendLog(
-                            ">>> Target locked: @$name :: initializing recon...",
-                            animate = true
-                        )
-                    }
-                    val userAction = client.actions().users().findByUsername(name).join()
-                    val user = userAction.user
-                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(user.pk)
-                    val resp = client.sendRequest(req).join()
-                    val today = java.time.LocalDate.now()
-                    val zone = java.time.ZoneId.systemDefault()
-                    val posts = mutableListOf<PostInfo>()
-                    for (item in resp.items) {
-                        val date = java.time.Instant.ofEpochSecond(item.taken_at)
-                            .atZone(zone).toLocalDate()
-                        if (date == today) {
-                            val caption = item.caption?.text
-                            var isVideo = false
-                            var videoUrl: String? = null
-                            var coverUrl: String? = null
-                            val images = mutableListOf<String>()
-                            when (item) {
-                                is TimelineVideoMedia -> {
-                                    isVideo = true
-                                    videoUrl = item.video_versions?.firstOrNull()?.url
-                                    coverUrl = item.image_versions2?.candidates?.firstOrNull()?.url
-                                }
-                                is TimelineImageMedia -> {
-                                    item.image_versions2?.candidates?.firstOrNull()?.url?.let { images.add(it) }
-                                }
-                                is TimelineCarouselMedia -> {
-                                    for (c in item.carousel_media) {
-                                        when (c) {
-                                            is ImageCarouselItem -> c.image_versions2.candidates.firstOrNull()?.url?.let { images.add(it) }
-                                            is VideoCarouselItem -> {
-                                                isVideo = true
-                                                if (videoUrl == null) videoUrl = c.video_versions?.firstOrNull()?.url
-                                                if (coverUrl == null) coverUrl = c.image_versions2.candidates.firstOrNull()?.url
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            posts.add(
-                                PostInfo(
-                                    code = item.code,
-                                    id = item.id,
-                                    caption = caption,
-                                    isVideo = isVideo,
-                                    imageUrls = images,
-                                    videoUrl = videoUrl,
-                                    coverUrl = coverUrl
-                                )
-                            )
-                        }
-                    }
-                    postsMap[name] = posts
-                }
-                withContext(Dispatchers.Main) {
-                    launchRoundRobinLikes(client, postsMap, doLike)
-                }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     appendLog("Error: ${e.message}")
                 }
             }
         }
-    }
-
-    private fun launchRoundRobinLikes(
-        client: IGClient,
-        postsMap: Map<String, List<PostInfo>>,
-        doLike: Boolean
-    ) {
-        CoroutineScope(Dispatchers.Main).launch {
-            postsMap.forEach { (user, posts) ->
-                posts.forEach { post ->
-                    appendLog(
-                        "> @$user post: https://instagram.com/p/${'$'}{post.code}",
-                        animate = true
-                    )
-                    delay(500)
-                }
-            }
-            appendLog(
-                ">>> Scrape complete.",
-                animate = true
-            )
-
-            if (doLike) {
-                appendLog(
-                    ">>> Executing like routine",
-                    animate = true
-                )
-                var liked = 0
-                val maxPosts = postsMap.values.maxOfOrNull { it.size } ?: 0
-                for (idx in 0 until maxPosts) {
-                    for ((user, posts) in postsMap) {
-                        if (idx >= posts.size) continue
-                        val post = posts[idx]
-                        val code = post.code
-                        val id = post.id
-                        appendLog(
-                            "> @$user > checking like status for ${'$'}code",
-                            animate = true
-                        )
-                        var alreadyLiked = false
-                        try {
-                            val info = withContext(Dispatchers.IO) {
-                                client.sendRequest(
-                                    com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                                ).join()
-                            }
-                            val already = info.items.firstOrNull()?.isHas_liked == true
-                            alreadyLiked = already
-                            val statusText = if (already) "already liked" else "not yet liked"
-                            appendLog(
-                                "> status: ${'$'}statusText",
-                                animate = true
-                            )
-                        } catch (e: Exception) {
-                            appendLog(
-                                "Error checking like: ${'$'}{e.message}",
-                                animate = true
-                            )
-                        }
-
-                        if (!alreadyLiked) {
-                            try {
-                                withContext(Dispatchers.IO) {
-                                    client.sendRequest(
-                                        MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
-                                    ).join()
-                                }
-                                appendLog(
-                                    "> liked post [${'$'}code]",
-                                    animate = true
-                                )
-                                liked++
-                            } catch (e: Exception) {
-                                appendLog("Error liking: ${'$'}{e.message}")
-                            }
-                        }
-                        delay(actionDelayMs)
-                    }
-                }
-                appendLog(
-                    ">>> Like routine finished. ${'$'}liked posts liked.",
-                    animate = true
-                )
-            }
-        }
-    }
     }
 
     private fun launchLogAndLikes(
