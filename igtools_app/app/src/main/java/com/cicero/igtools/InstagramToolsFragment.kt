@@ -87,6 +87,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var twitterUsernameView: TextView
     private lateinit var tiktokImage: ImageView
     private lateinit var tiktokUsernameView: TextView
+    private lateinit var targetLinkInput: EditText
     private var twitter: Twitter? = null
     private var twitterRequestToken: RequestToken? = null
     private val repostedIds = mutableSetOf<String>()
@@ -129,6 +130,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         tiktokImage = tiktokContainer.findViewById(R.id.image_tiktok)
         tiktokUsernameView = tiktokContainer.findViewById(R.id.text_tiktok_username)
         tiktokImage.setOnClickListener { showTiktokDialog() }
+        targetLinkInput = view.findViewById(R.id.input_target_link)
 
 
         startButton = view.findViewById(R.id.button_start)
@@ -147,6 +149,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         fetchTargetAccount()
 
         startButton.setOnClickListener {
+            val target = targetLinkInput.text.toString().trim()
+            if (target.isBlank()) {
+                Toast.makeText(requireContext(), "Link target wajib diisi", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            targetUsername = parseUsername(target)
+
             val doLike = likeCheckbox.isChecked
             val doRepost = repostCheckbox.isChecked
             val doComment = commentCheckbox.isChecked
@@ -544,6 +553,18 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             null
         }
     }
+    private fun parseUsername(input: String): String {
+        var user = input
+        user = user.removePrefix("https://")
+            .removePrefix("http://")
+            .removePrefix("www.")
+            .removePrefix("instagram.com/")
+            .trim().trimEnd('/')
+        if (user.startsWith("@")) user = user.substring(1)
+        return user
+    }
+
+
 
     private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean, doComment: Boolean) {
         appendLog(
