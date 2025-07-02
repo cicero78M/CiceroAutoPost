@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.CiceroReposter" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="android:icon">@mipmap/ic_launcher_round</item>
+        <item name="android:logo">@mipmap/ic_launcher_round</item>
+    </style>
+</resources>
