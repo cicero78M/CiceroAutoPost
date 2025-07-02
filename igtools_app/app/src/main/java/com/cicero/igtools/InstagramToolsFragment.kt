@@ -295,7 +295,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     .setOAuthConsumerSecret(BuildConfig.TWITTER_CONSUMER_SECRET)
                     .build()
                 twitter = TwitterFactory(config).instance
-                val reqToken = twitter?.getOAuthRequestToken("repostapp://twitter-callback")
+                val reqToken = twitter?.getOAuthRequestToken("igtools://twitter-callback")
                 if (reqToken != null) {
                     TwitterAuthManager.saveRequestToken(requireContext(), reqToken)
                 }
