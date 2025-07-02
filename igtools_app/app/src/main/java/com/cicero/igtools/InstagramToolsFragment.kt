@@ -147,17 +147,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         fetchTargetAccount()
 
         startButton.setOnClickListener {
-            if (!isPremium) {
-                Toast.makeText(requireContext(), "Fitur ini hanya untuk pengguna premium", Toast.LENGTH_SHORT).show()
+            val doLike = likeCheckbox.isChecked
+            val doRepost = repostCheckbox.isChecked
+            val doComment = commentCheckbox.isChecked
+            if (doLike || doRepost || doComment) {
+                fetchTodayPosts(doLike, doRepost, doComment)
             } else {
-                val doLike = likeCheckbox.isChecked
-                val doRepost = repostCheckbox.isChecked
-                val doComment = commentCheckbox.isChecked
-                if (doLike || doRepost || doComment) {
-                    fetchTodayPosts(doLike, doRepost, doComment)
-                } else {
-                    Toast.makeText(requireContext(), "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(requireContext(), "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
             }
         }
 
