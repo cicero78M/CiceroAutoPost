@@ -73,6 +73,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var likeCheckbox: android.widget.CheckBox
     private lateinit var repostCheckbox: android.widget.CheckBox
     private lateinit var commentCheckbox: android.widget.CheckBox
+    private lateinit var delaySeekBar: android.widget.SeekBar
+    private lateinit var delayText: TextView
+    private var actionDelayMs: Long = 30000L
     private lateinit var badgeView: ImageView
     private lateinit var logContainer: android.widget.LinearLayout
     private lateinit var logScroll: android.widget.ScrollView
@@ -131,6 +134,21 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         tiktokUsernameView = tiktokContainer.findViewById(R.id.text_tiktok_username)
         tiktokImage.setOnClickListener { showTiktokDialog() }
         targetLinkInput = view.findViewById(R.id.input_target_link)
+
+        delaySeekBar = view.findViewById(R.id.seekbar_delay)
+        delayText = view.findViewById(R.id.text_delay_value)
+        actionDelayMs = delaySeekBar.progress * 1000L
+        delayText.text = "Delay: ${delaySeekBar.progress} detik"
+        delaySeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
+                actionDelayMs = progress * 1000L
+                delayText.text = "Delay: ${progress} detik"
+            }
+
+            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
+
+            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
+        })
 
 
         startButton = view.findViewById(R.id.button_start)
@@ -719,7 +737,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             appendLog("Error liking: ${'$'}{e.message}")
                         }
                     }
-                    delay(1000)
+                    delay(actionDelayMs)
                 }
                 appendLog(
                     ">>> Like routine finished. ${'$'}liked posts liked.",
@@ -729,7 +747,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
             if (doComment) {
                 if (doLike) {
-                    delay(10000)
+                    delay(actionDelayMs)
                 }
                 appendLog(
                     ">>> Preparing comment sequence...",
@@ -746,7 +764,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     val id = post.id
                     val text = withContext(Dispatchers.IO) { fetchRandomQuote() } ?: ""
                     if (text.isBlank()) {
-                        delay(1000)
+                        delay(actionDelayMs)
                         continue
                     }
                     try {
@@ -763,7 +781,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     } catch (e: Exception) {
                         appendLog("Error commenting: ${'$'}{e.message}")
                     }
-                    delay(1000)
+                    delay(actionDelayMs)
                 }
                 appendLog(
                     ">>> Comment routine finished. ${'$'}commented posts commented.",
@@ -773,7 +791,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
             if (doRepost) {
                 if (doLike) {
-                    delay(10000)
+                    delay(actionDelayMs)
                 }
                 appendLog(
                     ">>> Initiating environment for re-post ops...",
@@ -829,7 +847,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 Log.d("InstagramToolsFragment", "Waiting before next post")
                 appendLog("> waiting for next post", animate = true)
-                showWaitingDots(60000)
+                showWaitingDots(actionDelayMs)
             }
             Log.d("InstagramToolsFragment", "Repost sequence finished")
             appendLog(
