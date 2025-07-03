@@ -24,6 +24,8 @@ android {
         versionName = "1.0.0"
         buildConfigField("String", "TWITTER_CONSUMER_KEY", "\"${envProps["TWITTER_CONSUMER_KEY"] ?: ""}\"")
         buildConfigField("String", "TWITTER_CONSUMER_SECRET", "\"${envProps["TWITTER_CONSUMER_SECRET"] ?: ""}\"")
+        buildConfigField("String", "IG_GRAPH_TOKEN", "\"${envProps["IG_GRAPH_TOKEN"] ?: ""}\"")
+        buildConfigField("String", "IG_GRAPH_USER_ID", "\"${envProps["IG_GRAPH_USER_ID"] ?: ""}\"")
     }
 
     buildFeatures {
