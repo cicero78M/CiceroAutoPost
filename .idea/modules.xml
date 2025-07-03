@@ -2,7 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/CiceroAutoPost1.iml" filepath="$PROJECT_DIR$/.idea/CiceroAutoPost1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socialtools_app" filepath="$PROJECT_DIR$/socialtools_app" />
+      <module fileurl="file://$PROJECT_DIR$/socialtools_app/app" filepath="$PROJECT_DIR$/socialtools_app/app" />
     </modules>
   </component>
 </project>
