@@ -1,15 +1,16 @@
-package com.cicero.socialtools
+package com.cicero.socialtools.utils
 
 import org.json.JSONObject
+import com.cicero.socialtools.utils.OpenAiUtils
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class InstagramToolsFragmentTest {
+class OpenAiUtilsTest {
     @Test
     fun buildRequestJsonHandlesNewlines() {
         val caption = "Hello\nWorld"
-        val jsonStr = buildOpenAiRequestJson(caption)
+        val jsonStr = OpenAiUtils.buildRequestJson(caption)
         val obj = JSONObject(jsonStr)
         assertEquals("gpt-3.5-turbo", obj.getString("model"))
         assertTrue(!obj.has("max_tokens"))

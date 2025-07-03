@@ -1,4 +1,4 @@
-package com.cicero.socialtools
+package com.cicero.socialtools.core
 
 import android.app.Application
 

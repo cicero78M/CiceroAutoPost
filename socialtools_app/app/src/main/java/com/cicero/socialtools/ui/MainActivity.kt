@@ -1,9 +1,12 @@
-package com.cicero.socialtools
+package com.cicero.socialtools.ui
 
 import android.os.Bundle
 import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
+import com.cicero.socialtools.R
+import com.cicero.socialtools.core.services.PostService
+import com.cicero.socialtools.features.instagram.InstagramToolsFragment
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

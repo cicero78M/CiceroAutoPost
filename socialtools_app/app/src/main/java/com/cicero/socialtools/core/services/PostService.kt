@@ -1,4 +1,4 @@
-package com.cicero.socialtools
+package com.cicero.socialtools.core.services
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import android.util.Log
+import com.cicero.socialtools.R
 import kotlinx.coroutines.*
 
 class PostService : Service() {
