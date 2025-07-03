@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import com.cicero.socialtools.R
-import com.cicero.socialtools.core.services.PostService
 import com.cicero.socialtools.features.instagram.InstagramToolsFragment
 
 class MainActivity : AppCompatActivity() {
@@ -22,7 +21,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPostService() {
-        val intent = Intent(this, PostService::class.java)
+        val intent = Intent(this, com.cicero.socialtools.core.services.PostService::class.java)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
