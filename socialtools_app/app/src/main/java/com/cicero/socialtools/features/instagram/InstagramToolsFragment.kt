@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import android.util.Log
@@ -82,6 +83,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var badgeView: ImageView
     private lateinit var logContainer: android.widget.LinearLayout
     private lateinit var logScroll: android.widget.ScrollView
+    private lateinit var clearLogsButton: android.widget.ImageButton
     private lateinit var avatarView: ImageView
     private lateinit var usernameView: TextView
     private lateinit var nameView: TextView
@@ -187,6 +189,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         badgeView = profileView.findViewById(R.id.image_badge)
         logContainer = view.findViewById(R.id.log_container)
         logScroll = view.findViewById(R.id.log_scroll)
+        clearLogsButton = view.findViewById(R.id.button_clear_logs)
+
+        clearLogsButton.setOnClickListener { clearLogs() }
 
         val authPrefs = requireContext().getSharedPreferences("auth", Context.MODE_PRIVATE)
         token = authPrefs.getString("token", "") ?: ""
@@ -477,6 +482,16 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         if (file.exists()) {
             file.forEachLine { line ->
                 appendLog(line, appendToFile = false)
+            }
+        }
+    }
+
+    private fun clearLogs() {
+        logContainer.removeAllViews()
+        currentUsername?.let { user ->
+            val file = getLogFileForUser(user)
+            if (file.exists()) {
+                file.delete()
             }
         }
     }
