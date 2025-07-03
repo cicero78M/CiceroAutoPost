@@ -105,6 +105,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     )
 
     private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
+    private fun randomCommentDelayMs(): Long = Random.nextLong(5000L, 20000L)
 
     private suspend fun scrollRandomFlareFeed(client: IGClient) {
         val username = flareTargets.random()
@@ -545,7 +546,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
             }
-            delay(randomDelayMs())
+            delay(randomCommentDelayMs())
         }
     }
 
@@ -602,7 +603,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
             }
-            delay(randomDelayMs())
+            delay(randomCommentDelayMs())
         }
     }
 
@@ -783,9 +784,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         fetchAiComment(post.caption ?: "")
                     } ?: ""
                     if (text.isBlank()) {
-                        delay(randomDelayMs())
+                        delay(randomCommentDelayMs())
                         scrollRandomFlareFeed(client)
-                        delay(randomDelayMs())
+                        delay(randomCommentDelayMs())
                         continue
                     }
                     try {
@@ -802,9 +803,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     } catch (e: Exception) {
                         appendLog("Error commenting: ${'$'}{e.message}")
                     }
-                    delay(randomDelayMs())
+                    delay(randomCommentDelayMs())
                     scrollRandomFlareFeed(client)
-                    delay(randomDelayMs())
+                    delay(randomCommentDelayMs())
                 }
                 appendLog(
                     ">>> Comment routine finished. ${'$'}commented posts commented.",
@@ -993,14 +994,17 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             .build()
         return try {
             client.newCall(req).execute().use { resp ->
+                val bodyStr = resp.body?.string()
                 if (!resp.isSuccessful) {
-                    appendLog("> OpenAI request failed: ${'$'}{resp.code}")
-                    Log.d("InstagramToolsFragment", "OpenAI request failed: ${resp.code}")
+                    appendLog("> OpenAI request failed: ${'$'}{resp.code} ${'$'}{bodyStr?.take(80)}")
+                    Log.d(
+                        "InstagramToolsFragment",
+                        "OpenAI request failed: ${'$'}{resp.code} body: ${'$'}{bodyStr}"
+                    )
                     return null
                 }
-                val body = resp.body?.string()
-                Log.d("InstagramToolsFragment", "OpenAI raw response: ${body?.take(60)}")
-                val obj = JSONObject(body ?: "{}")
+                Log.d("InstagramToolsFragment", "OpenAI raw response: ${'$'}{bodyStr?.take(60)}")
+                val obj = JSONObject(bodyStr ?: "{}")
                 obj.getJSONArray("choices")
                     .optJSONObject(0)
                     ?.optJSONObject("message")
@@ -1008,7 +1012,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     ?.trim()
             }
         } catch (e: Exception) {
-            appendLog("> OpenAI call error: ${'$'}{e.message}")
+            appendLog("> OpenAI call error: ${'$'}{e.javaClass.simpleName}: ${'$'}{e.message}")
             Log.e("InstagramToolsFragment", "OpenAI call error", e)
             null
         }
