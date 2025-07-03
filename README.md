@@ -8,8 +8,9 @@ wrapper files.
 
 ## Configuration
 
-Create a `.env` file in the repository root to provide your Twitter API
-credentials. It should contain the following keys:
+Create a `.env` file inside the `socialtools_app` directory (the Gradle
+project root) to provide your Twitter API credentials. It should contain the
+following keys:
 
 ```
 TWITTER_CONSUMER_KEY=your_key
