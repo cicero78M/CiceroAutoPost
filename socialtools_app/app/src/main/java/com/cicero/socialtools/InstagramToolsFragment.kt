@@ -3,26 +3,33 @@ package com.cicero.socialtools
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
-import android.provider.Settings
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.webkit.WebSettings
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import android.util.Log
+import android.provider.Settings
+import android.webkit.WebSettings
+import android.os.Build
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.github.instagram4j.instagram4j.exceptions.IGResponseException
+import com.github.instagram4j.instagram4j.responses.accounts.LoginResponse
 import com.bumptech.glide.Glide
-import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.IGDevice
+import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
-import com.github.instagram4j.instagram4j.exceptions.IGResponseException
+import com.cicero.socialtools.BuildConfig
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -31,7 +38,6 @@ import com.github.instagram4j.instagram4j.models.media.timeline.VideoCarouselIte
 import com.github.instagram4j.instagram4j.models.user.User
 import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
-import com.github.instagram4j.instagram4j.responses.accounts.LoginResponse
 import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +66,7 @@ data class PostInfo(
     val coverUrl: String? = null
 )
 
-@Suppress("DEPRECATION", "UNUSED_EXPRESSION")
+@Suppress("DEPRECATION")
 class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var loginContainer: View
     private lateinit var profileContainer: View
@@ -114,14 +120,16 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         val username = flareTargets.random()
         withContext(Dispatchers.Main) { appendLog("> scrolling @$username", animate = true) }
         try {
-            val action = client.actions().users().findByUsername(username).join()
-            var maxId: String? = null
-            repeat(3) {
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk, maxId)
-                val resp = client.sendRequest(req).join()
-                maxId = resp.next_max_id
-                if (maxId == null) return
-                delay(500)
+            withContext(Dispatchers.IO) {
+                val action = client.actions().users().findByUsername(username).join()
+                var maxId: String? = null
+                repeat(3) {
+                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk, maxId)
+                    val resp = client.sendRequest(req).join()
+                    maxId = resp.next_max_id
+                    if (maxId == null) return@withContext
+                    delay(500)
+                }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) { appendLog("Error scroll @$username: ${e.message}") }
@@ -133,7 +141,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         setHasOptionsMenu(true)
     }
 
-    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val username = view.findViewById<EditText>(R.id.input_username)
@@ -160,10 +167,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         actionDelayMs = delaySeekBar.progress * 1000L
         delayText.text = "Delay: ${delaySeekBar.progress} detik"
         delaySeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            @SuppressLint("SetTextI18n")
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 actionDelayMs = progress * 1000L
-                delayText.text = "Delay: $progress detik"
+                delayText.text = "Delay: ${progress} detik"
             }
 
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -226,7 +232,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     }
 
 
-    @SuppressLint("HardwareIds")
     private fun loginWithDeviceInfo(
         user: String,
         pass: String,
@@ -577,23 +582,31 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             try {
-                val action = client.actions().users().findByUsername(username).join()
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
-                val resp = client.sendRequest(req).join()
+                val action = withContext(Dispatchers.IO) {
+                    client.actions().users().findByUsername(username).join()
+                }
+                val resp = withContext(Dispatchers.IO) {
+                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                    client.sendRequest(req).join()
+                }
                 val candidates = resp.items.take(12)
                 var liked = false
                 for (item in candidates) {
                     val id = item.id
                     val code = item.code
                     val already = try {
-                        client.sendRequest(
-                            com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                        ).join().items.firstOrNull()?.isHas_liked == true
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
+                            ).join()
+                        }.items.firstOrNull()?.isHas_liked == true
                     } catch (_: Exception) { false }
                     if (!already) {
-                        client.sendRequest(
-                            MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
-                        ).join()
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                            ).join()
+                        }
                         withContext(Dispatchers.Main) { appendLog("> liked [$code]", animate = true) }
                         liked = true
                         break
@@ -616,9 +629,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             try {
-                val action = client.actions().users().findByUsername(username).join()
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
-                val resp = client.sendRequest(req).join()
+                val action = withContext(Dispatchers.IO) {
+                    client.actions().users().findByUsername(username).join()
+                }
+                val resp = withContext(Dispatchers.IO) {
+                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                    client.sendRequest(req).join()
+                }
                 val candidates = resp.items.take(12)
                 var commented = false
                 var skippedNoText = 0
@@ -628,9 +645,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     val code = item.code
                     val captionText = item.caption?.text ?: ""
                     Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
-                    // Generate a friendly and supportive comment for the post
-                    // caption using OpenAI with a 30 token limit
-                    val aiComment = fetchAiComment(captionText, 30)
+                    // Generate a friendly and supportive comment for the post caption
+                    // using OpenAI with a 15-word limit
+                    val aiComment = withContext(Dispatchers.IO) { fetchAiComment(captionText) }
                     if (aiComment == null) {
                         withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
                         Log.d("InstagramToolsFragment", "AI comment generation returned null")
@@ -642,9 +659,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         continue
                     }
                     try {
-                        client.sendRequest(
-                            com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
-                        ).join()
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
+                            ).join()
+                        }
                         withContext(Dispatchers.Main) { appendLog("> commented [$code]", animate = true) }
                         commented = true
                         break
@@ -654,7 +673,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                 }
                 if (!commented) {
-                    "skipped ${'$'}skippedNoText, failed ${'$'}failed"
+                    val info = "skipped ${'$'}skippedNoText, failed ${'$'}failed"
                     withContext(Dispatchers.Main) {
                         appendLog("> all recent posts already commented or no text (${'$'}info)", animate = true)
                     }
@@ -749,7 +768,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         doRepost: Boolean,
         doComment: Boolean
     ) {
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             for (post in posts) {
                 val code = post.code
                 appendLog(
@@ -793,7 +812,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             ).join()
                         }.items.firstOrNull()?.isHas_liked == true
                     } catch (_: Exception) { false }
-                    if (alreadyLiked) "already liked" else "not yet liked"
+                    val statusText = if (alreadyLiked) "already liked" else "not yet liked"
                     appendLog("> status: ${'$'}statusText", animate = true)
                     if (!alreadyLiked) {
                         try {
@@ -895,7 +914,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun launchRepostSequence(client: IGClient, posts: List<PostInfo>) {
         Log.d("InstagramToolsFragment", "Start repost sequence")
         val toProcess = posts.filter { !repostedIds.contains(it.code) }
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             for (post in toProcess) {
                 Log.d("InstagramToolsFragment", "Processing post ${'$'}{post.code}")
                 val files = withContext(Dispatchers.IO) {
@@ -1026,7 +1045,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private fun fetchAiComment(caption: String, maxTokens: Int = 30): String? {
+    private fun fetchAiComment(caption: String): String? {
         val apiKey = BuildConfig.OPENAI_API_KEY
         if (apiKey.isBlank()) {
             appendLog("> AI comment skipped: API key blank")
@@ -1039,7 +1058,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             return null
         }
         Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
-        val json = buildOpenAiRequestJson(caption, maxTokens)
+        val json = buildOpenAiRequestJson(caption)
         val client = OkHttpClient()
         val req = Request.Builder()
             .url("https://api.openai.com/v1/chat/completions")
@@ -1060,11 +1079,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 Log.d("InstagramToolsFragment", "OpenAI raw response: ${'$'}{bodyStr?.take(60)}")
                 val obj = JSONObject(bodyStr ?: "{}")
-                obj.getJSONArray("choices")
+                val text = obj.getJSONArray("choices")
                     .optJSONObject(0)
                     ?.optJSONObject("message")
                     ?.optString("content")
                     ?.trim()
+                text?.let { limitWords(it, 15) }
             }
         } catch (e: Exception) {
             val details = e.stackTraceToString()
@@ -1074,9 +1094,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private fun buildOpenAiRequestJson(caption: String, maxTokens: Int = 30): String {
-        val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung untuk " +
-                "caption berikut. Gunakan nada yang ringan dan tulus: " + caption
+    internal fun buildOpenAiRequestJson(caption: String): String {
+        val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung. " +
+                "Maksimal 15 kata. Gunakan nada ringan dan tulus untuk caption berikut: " + caption
         val message = JSONObject().apply {
             put("role", "user")
             put("content", prompt)
@@ -1084,7 +1104,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return JSONObject().apply {
             put("model", "gpt-3.5-turbo")
             put("messages", org.json.JSONArray().put(message))
-            put("max_tokens", maxTokens)
         }.toString()
     }
 
@@ -1095,6 +1114,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             appendLog(".", animate = false)
             remaining -= 5000
         }
+    }
+
+    private fun limitWords(text: String, maxWords: Int): String {
+        val words = text.split(Regex("\\s+")).filter { it.isNotBlank() }
+        return words.take(maxWords).joinToString(" ").trim()
     }
 
 
