@@ -1,6 +1,8 @@
 package com.cicero.socialtools
 
 import android.os.Bundle
+import android.content.Intent
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -10,6 +12,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        startPostService()
         setContentView(R.layout.activity_main)
 
         val fragments = listOf<Fragment>(
@@ -47,5 +50,14 @@ class MainActivity : AppCompatActivity() {
         })
 
         bottomNav.selectedItemId = R.id.nav_insta_login
+    }
+
+    private fun startPostService() {
+        val intent = Intent(this, PostService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
 }
