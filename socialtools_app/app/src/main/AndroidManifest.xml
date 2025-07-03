@@ -2,6 +2,8 @@
 <manifest package="com.cicero.socialtools"
     xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Required for starting foreground services on Android 9+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application
         android:name=".App"
         android:allowBackup="true"
