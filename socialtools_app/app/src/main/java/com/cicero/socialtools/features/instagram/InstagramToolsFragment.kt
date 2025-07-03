@@ -1,4 +1,4 @@
-package com.cicero.socialtools
+package com.cicero.socialtools.features.instagram
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -30,6 +30,8 @@ import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
 import com.cicero.socialtools.BuildConfig
+import com.cicero.socialtools.R
+import com.cicero.socialtools.utils.OpenAiUtils
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -1058,7 +1060,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             return null
         }
         Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
-        val json = buildOpenAiRequestJson(caption)
+        val json = OpenAiUtils.buildRequestJson(caption)
         val client = OkHttpClient()
         val req = Request.Builder()
             .url("https://api.openai.com/v1/chat/completions")
@@ -1094,18 +1096,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    internal fun buildOpenAiRequestJson(caption: String): String {
-        val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung. " +
-                "Maksimal 15 kata. Gunakan nada ringan dan tulus untuk caption berikut: " + caption
-        val message = JSONObject().apply {
-            put("role", "user")
-            put("content", prompt)
-        }
-        return JSONObject().apply {
-            put("model", "gpt-3.5-turbo")
-            put("messages", org.json.JSONArray().put(message))
-        }.toString()
-    }
 
     private suspend fun showWaitingDots(duration: Long) {
         var remaining = duration

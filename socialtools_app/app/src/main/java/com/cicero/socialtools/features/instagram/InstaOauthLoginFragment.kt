@@ -1,4 +1,4 @@
-package com.cicero.socialtools
+package com.cicero.socialtools.features.instagram
 
 import android.annotation.SuppressLint
 import android.net.Uri
