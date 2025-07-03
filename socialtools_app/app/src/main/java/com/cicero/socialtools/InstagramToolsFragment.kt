@@ -680,12 +680,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
                         Log.d("InstagramToolsFragment", "AI comment generation returned null")
                     }
-                    val quote = if (aiComment.isNullOrBlank()) fetchRandomQuote() else null
-                    if (aiComment.isNullOrBlank() && quote == null) {
-                        withContext(Dispatchers.Main) { appendLog("> random quote fetch returned null") }
-                        Log.d("InstagramToolsFragment", "Random quote fetch returned null")
-                    }
-                    val text = aiComment ?: quote ?: ""
+                    val text = aiComment ?: ""
                     if (text.isBlank()) {
                         skippedNoText++
                         withContext(Dispatchers.Main) { appendLog("> skip [$code] - no comment text") }
@@ -890,7 +885,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                     commentFlareAccounts(client, 5)
                     val text = withContext(Dispatchers.IO) {
-                        fetchAiComment(post.caption ?: "") ?: fetchRandomQuote()
+                        fetchAiComment(post.caption ?: "")
                     } ?: ""
                     if (text.isBlank()) {
                         delay(randomDelayMs())
@@ -1067,42 +1062,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             }
             appendLog("> saved to ${'$'}{file.name}", animate = true)
         } catch (_: Exception) {
-        }
-    }
-
-    private fun fetchRandomQuote(): String? {
-        if (token.isBlank()) {
-            appendLog("> random quote skipped: no token")
-            Log.d("InstagramToolsFragment", "No token, cannot fetch random quote")
-            return null
-        }
-        val client = OkHttpClient()
-        val req = Request.Builder()
-            .url("https://papiqo.com/api/quotes/random")
-            .header("Authorization", "Bearer $token")
-            .build()
-        return try {
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) {
-                    appendLog("> random quote request failed: ${'$'}{resp.code}")
-                    Log.d("InstagramToolsFragment", "Random quote request failed: ${resp.code}")
-                    return null
-                }
-                val body = resp.body?.string()
-                val obj = try {
-                    JSONObject(body ?: "{}").optJSONObject("data")
-                } catch (_: Exception) { null }
-                val quote = obj?.optString("translation")?.takeIf { it.isNotBlank() }
-                if (quote == null) {
-                    appendLog("> random quote response empty")
-                    Log.d("InstagramToolsFragment", "Random quote response empty")
-                }
-                quote
-            }
-        } catch (e: Exception) {
-            appendLog("> random quote fetch error: ${'$'}{e.message}")
-            Log.e("InstagramToolsFragment", "Random quote fetch error", e)
-            null
         }
     }
 
