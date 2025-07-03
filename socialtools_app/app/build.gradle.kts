@@ -28,6 +28,7 @@ android {
         buildConfigField("String", "IG_GRAPH_USER_ID", "\"${envProps["IG_GRAPH_USER_ID"] ?: ""}\"")
         buildConfigField("String", "IG_APP_ID", "\"${envProps["IG_APP_ID"] ?: ""}\"")
         buildConfigField("String", "IG_REDIRECT_URI", "\"${envProps["IG_REDIRECT_URI"] ?: ""}\"")
+        buildConfigField("String", "OPENAI_API_KEY", "\"${envProps["OPENAI_API_KEY"] ?: ""}\"")
     }
 
     buildFeatures {
