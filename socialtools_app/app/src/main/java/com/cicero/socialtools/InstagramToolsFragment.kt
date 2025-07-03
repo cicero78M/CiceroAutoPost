@@ -323,9 +323,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 withContext(Dispatchers.Main) {
                     startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                val rawMsg = if (e is twitter4j.TwitterException && e.errorMessage != null) {
+                    "${e.statusCode}: ${e.errorMessage}"
+                } else e.message ?: e.toString()
+                Log.e("InstagramToolsFragment", "Twitter login failed: $rawMsg", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Gagal menghubungi Twitter", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Gagal menghubungi Twitter: $rawMsg", Toast.LENGTH_LONG).show()
                 }
             }
         }
