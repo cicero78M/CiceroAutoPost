@@ -45,10 +45,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import twitter4j.Twitter
-import twitter4j.TwitterFactory
-import twitter4j.auth.RequestToken
-import twitter4j.conf.ConfigurationBuilder
 import java.io.File
 import java.util.concurrent.Callable
 import kotlin.random.Random
@@ -84,13 +80,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var postsView: TextView
     private lateinit var followersView: TextView
     private lateinit var followingView: TextView
-    private lateinit var twitterImage: ImageView
-    private lateinit var twitterUsernameView: TextView
-    private lateinit var tiktokImage: ImageView
-    private lateinit var tiktokUsernameView: TextView
+    // Removed Twitter and TikTok UI elements
     private lateinit var targetLinkInput: EditText
-    private var twitter: Twitter? = null
-    private var twitterRequestToken: RequestToken? = null
     private val repostedIds = mutableSetOf<String>()
     private val clientFile: File by lazy { File(requireContext().filesDir, "igclient.ser") }
     private val cookieFile: File by lazy { File(requireContext().filesDir, "igcookie.ser") }
@@ -156,14 +147,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         profileView.findViewById<View>(R.id.info_container).visibility = View.GONE
         profileView.findViewById<Button>(R.id.button_logout).visibility = View.GONE
 
-        val twitterContainer = view.findViewById<View>(R.id.twitter_container)
-        twitterImage = twitterContainer.findViewById(R.id.image_twitter)
-        twitterUsernameView = twitterContainer.findViewById(R.id.text_twitter_username)
-
-        val tiktokContainer = view.findViewById<View>(R.id.tiktok_container)
-        tiktokImage = tiktokContainer.findViewById(R.id.image_tiktok)
-        tiktokUsernameView = tiktokContainer.findViewById(R.id.text_tiktok_username)
-        tiktokImage.setOnClickListener { showTiktokDialog() }
+        // Removed Twitter and TikTok containers
         targetLinkInput = view.findViewById(R.id.input_target_link)
 
         delaySeekBar = view.findViewById(R.id.seekbar_delay)
@@ -218,10 +202,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         checkSubscriptionStatus(currentUsername)
 
         restoreSession()
-        updateTwitterStatus()
-        updateTiktokStatus()
 
-        twitterImage.setOnClickListener { startTwitterLogin() }
 
         view.findViewById<Button>(R.id.button_login_insta).setOnClickListener {
             val user = username.text.toString().trim()
@@ -234,11 +215,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        updateTwitterStatus()
-        updateTiktokStatus()
-    }
+
 
     private fun performLogin(user: String, pass: String) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -341,91 +318,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private fun startTwitterLogin() {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val config = ConfigurationBuilder()
-                    .setOAuthConsumerKey(BuildConfig.TWITTER_CONSUMER_KEY)
-                    .setOAuthConsumerSecret(BuildConfig.TWITTER_CONSUMER_SECRET)
-                    .build()
-                twitter = TwitterFactory(config).instance
-                val reqToken = twitter?.getOAuthRequestToken("socialtools://twitter-callback")
-                if (reqToken != null) {
-                    TwitterAuthManager.saveRequestToken(requireContext(), reqToken)
-                }
-                twitterRequestToken = reqToken
-                val url = reqToken?.authorizationURL ?: return@launch
-                withContext(Dispatchers.Main) {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                }
-            } catch (e: Exception) {
-                val rawMsg = if (e is twitter4j.TwitterException && e.errorMessage != null) {
-                    "${e.statusCode}: ${e.errorMessage}"
-                } else e.message ?: e.toString()
-                Log.e("InstagramToolsFragment", "Twitter login failed: $rawMsg", e)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Gagal menghubungi Twitter: $rawMsg", Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
 
-    private fun updateTwitterStatus() {
-        val stored = TwitterAuthManager.loadAccessToken(requireContext())
-        if (stored != null) {
-            val (accessToken, accessSecret) = stored
-            val config = ConfigurationBuilder()
-                .setOAuthConsumerKey(BuildConfig.TWITTER_CONSUMER_KEY)
-                .setOAuthConsumerSecret(BuildConfig.TWITTER_CONSUMER_SECRET)
-                .setOAuthAccessToken(accessToken)
-                .setOAuthAccessTokenSecret(accessSecret)
-                .build()
-            twitter = TwitterFactory(config).instance
-            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                val tw = twitter ?: return@launch
-                try {
-                    val user = tw.verifyCredentials()
-                    withContext(Dispatchers.Main) {
-                        twitterUsernameView.text = "@${user.screenName}"
-                        twitterUsernameView.visibility = View.VISIBLE
-                        Glide.with(this@InstagramToolsFragment)
-                            .load(user.profileImageURLHttps)
-                            .circleCrop()
-                            .into(twitterImage)
-                    }
-                } catch (_: Exception) {
-                    withContext(Dispatchers.Main) {
-                        twitterImage.setImageResource(R.drawable.twitter_icon)
-                        twitterUsernameView.visibility = View.GONE
-                    }
-                }
-            }
-        } else {
-            twitterImage.setImageResource(R.drawable.twitter_icon)
-            twitterUsernameView.visibility = View.GONE
-        }
-    }
-
-    private fun updateTiktokStatus() {
-        val profile = TiktokSessionManager.loadProfile(requireContext())
-        if (profile != null) {
-            val username = profile.optString("uniqueId")
-            tiktokUsernameView.text = "@$username"
-            tiktokUsernameView.visibility = View.VISIBLE
-            val avatarUrl = profile.optString("avatarLarger", profile.optString("avatarThumb"))
-            if (avatarUrl.isNotBlank()) {
-                Glide.with(this)
-                    .load(avatarUrl)
-                    .circleCrop()
-                    .into(tiktokImage)
-            } else {
-                tiktokImage.setImageResource(R.drawable.tiktok_icon)
-            }
-        } else {
-            tiktokImage.setImageResource(R.drawable.tiktok_icon)
-            tiktokUsernameView.visibility = View.GONE
-        }
-    }
 
 
     private fun checkSubscriptionStatus(username: String?) {
@@ -1130,29 +1023,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private fun showTiktokDialog() {
-        val input = EditText(requireContext())
-        AlertDialog.Builder(requireContext())
-            .setTitle("TikTok Username")
-            .setView(input)
-            .setPositiveButton("Login") { _, _ ->
-                val username = input.text.toString().trim()
-                if (username.isNotEmpty()) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val user = TikwmApi.fetchUser(username)
-                        if (user != null) {
-                            TiktokSessionManager.saveProfile(requireContext(), user)
-                            Toast.makeText(requireContext(), "Logged in as ${user.optString("uniqueId")}", Toast.LENGTH_SHORT).show()
-                            updateTiktokStatus()
-                        } else {
-                            Toast.makeText(requireContext(), "Login gagal", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
 
     @Deprecated("Deprecated in Java")
     override fun onCreateOptionsMenu(menu: android.view.Menu, inflater: android.view.MenuInflater) {

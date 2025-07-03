@@ -98,55 +98,7 @@
             android:orientation="horizontal">
 
 
-            <LinearLayout
-                android:id="@+id/twitter_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <ImageView
-                    android:id="@+id/image_twitter"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/twitter_icon"
-                    android:contentDescription="Twitter" />
-
-                <TextView
-                    android:id="@+id/text_twitter_username"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@android:color/black"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/tiktok_container"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:orientation="vertical"
-                android:gravity="center">
-
-                <ImageView
-                    android:id="@+id/image_tiktok"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/tiktok_icon"
-                    android:contentDescription="TikTok" />
-
-                <TextView
-                    android:id="@+id/text_tiktok_username"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@android:color/black"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
-            </LinearLayout>
+            <!-- Removed Twitter OAuth and TikTok icons -->
 
 
         </LinearLayout>
