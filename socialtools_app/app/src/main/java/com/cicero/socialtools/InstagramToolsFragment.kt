@@ -50,6 +50,7 @@ import twitter4j.auth.RequestToken
 import twitter4j.conf.ConfigurationBuilder
 import java.io.File
 import java.util.concurrent.Callable
+import kotlin.random.Random
 
 data class PostInfo(
     val code: String,
@@ -92,6 +93,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private val repostedIds = mutableSetOf<String>()
     private val clientFile: File by lazy { File(requireContext().filesDir, "igclient.ser") }
     private val cookieFile: File by lazy { File(requireContext().filesDir, "igcookie.ser") }
+    private val likedUsers = mutableSetOf<String>()
     private var currentUsername: String? = null
     private var token: String = ""
     private var userId: String = ""
@@ -110,6 +112,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         "divpropampolri",
         "divtikpolri"
     )
+
+    private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -600,6 +604,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             appendLog(">>> Liking flare accounts", animate = true)
         }
         for (username in flareTargets.shuffled()) {
+            if (likedUsers.contains(username)) continue
             withContext(Dispatchers.Main) {
                 appendLog("> flare @$username", animate = true)
             }
@@ -630,7 +635,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
             }
-            delay(actionDelayMs)
+            likedUsers.add(username)
+            delay(randomDelayMs())
         }
     }
 
@@ -645,6 +651,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             ">>> Target locked: @$targetUsername :: initializing recon...",
             animate = true
         )
+        likedUsers.clear()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val client = IGClient.deserialize(clientFile, cookieFile)
@@ -744,60 +751,70 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     ">>> Executing like routine",
                     animate = true
                 )
-                var liked = 0
-                for (post in posts) {
-                    val code = post.code
-                    val id = post.id
-                    appendLog(
-                        "> checking like status for $code",
-                        animate = true
-                    )
-
-                    var alreadyLiked = false
-
-                    try {
-                        val info = withContext(Dispatchers.IO) {
-                            client.sendRequest(
-                                com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                            ).join()
-                        }
-                        val already = info.items.firstOrNull()?.isHas_liked == true
-                        alreadyLiked = already
-                        val statusText = if (already) "already liked" else "not yet liked"
-
+                if (!likedUsers.contains(targetUsername)) {
+                    var liked = 0
+                    for (post in posts) {
+                        val code = post.code
+                        val id = post.id
                         appendLog(
-                            "> status: $statusText",
+                            "> checking like status for $code",
                             animate = true
                         )
-                    } catch (e: Exception) {
-                        appendLog(
-                            "Error checking like: ${e.message}",
-                            animate = true
-                        )
-                    }
 
-                    if (!alreadyLiked) {
+                        var alreadyLiked = false
+
                         try {
-                            withContext(Dispatchers.IO) {
+                            val info = withContext(Dispatchers.IO) {
                                 client.sendRequest(
-                                    MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                                    com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
                                 ).join()
                             }
+                            val already = info.items.firstOrNull()?.isHas_liked == true
+                            alreadyLiked = already
+                            val statusText = if (already) "already liked" else "not yet liked"
+
                             appendLog(
-                                "> liked post [$code]",
+                                "> status: $statusText",
                                 animate = true
                             )
-                            liked++
                         } catch (e: Exception) {
-                            appendLog("Error liking: ${'$'}{e.message}")
+                            appendLog(
+                                "Error checking like: ${e.message}",
+                                animate = true
+                            )
                         }
+
+                        if (!alreadyLiked) {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    client.sendRequest(
+                                        MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                                    ).join()
+                                }
+                                appendLog(
+                                    "> liked post [$code]",
+                                    animate = true
+                                )
+                                liked++
+                                likedUsers.add(targetUsername)
+                                delay(randomDelayMs())
+                                break
+                            } catch (e: Exception) {
+                                appendLog("Error liking: ${'$'}{e.message}")
+                            }
+                        }
+                        delay(randomDelayMs())
                     }
-                    delay(actionDelayMs)
+                    appendLog(
+                        ">>> Like routine finished. ${'$'}liked posts liked.",
+                        animate = true
+                    )
+                } else {
+                    appendLog(
+                        ">>> Like routine skipped. @$targetUsername already liked this rotation.",
+                        animate = true
+                    )
                 }
-                appendLog(
-                    ">>> Like routine finished. ${'$'}liked posts liked.",
-                    animate = true
-                )
             }
 
             if (doComment) {
