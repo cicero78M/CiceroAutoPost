@@ -675,7 +675,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     val code = item.code
                     val captionText = item.caption?.text ?: ""
                     Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
-                    val aiComment = fetchAiComment(captionText, 15)
+                    // Generate a friendly and supportive comment for the post
+                    // caption using OpenAI with a 30 token limit
+                    val aiComment = fetchAiComment(captionText, 30)
                     if (aiComment == null) {
                         withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
                         Log.d("InstagramToolsFragment", "AI comment generation returned null")
@@ -1078,10 +1080,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             return null
         }
         Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
+        val prompt =
+            "Buat komentar Instagram yang ceria, bersahabat, dan mendukung untuk " +
+                "caption berikut. Gunakan nada yang ringan dan tulus: " +
+                caption.replace("\"", "\\\"")
         val json = """
             {
               "model": "gpt-3.5-turbo",
-              "messages": [{"role":"user","content":"Buat komentar singkat untuk caption berikut: ${caption.replace("\"", "\\\"")}"}],
+              "messages": [{"role":"user","content":"${'$'}prompt"}],
               "max_tokens": ${'$'}maxTokens
             }
         """.trimIndent()
