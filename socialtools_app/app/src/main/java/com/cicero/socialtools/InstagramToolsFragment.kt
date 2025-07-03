@@ -1129,18 +1129,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 true
             }
-            R.id.action_register_premium -> {
-                val intent = android.content.Intent(requireContext(), PremiumRegistrationActivity::class.java)
-                intent.putExtra("username", currentUsername ?: "")
-                startActivity(intent)
-                true
-            }
-            R.id.action_confirm_subscription -> {
-                val intent = android.content.Intent(requireContext(), SubscriptionConfirmActivity::class.java)
-                intent.putExtra("username", currentUsername ?: "")
-                startActivity(intent)
-                true
-            }
             else -> super.onOptionsItemSelected(item)
         }
     }
