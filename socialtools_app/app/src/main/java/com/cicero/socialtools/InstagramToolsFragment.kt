@@ -25,6 +25,8 @@ import com.github.instagram4j.instagram4j.responses.accounts.LoginResponse
 import com.bumptech.glide.Glide
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
+import com.github.instagram4j.instagram4j.IGDevice
+import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
 import com.cicero.socialtools.BuildConfig
