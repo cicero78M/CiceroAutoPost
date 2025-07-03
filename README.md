@@ -6,6 +6,10 @@ The Gradle wrapper JAR is also excluded to keep the repository free of binary
 artifacts. Running `./gradlew` will automatically download the required
 wrapper files.
 
+The app now opens straight to the Instagram tools screen. The previous
+ViewPager navigation has been removed so users are taken directly to the IG
+automation interface on launch.
+
 ## Configuration
 
 Create a `.env` file in the repository root to provide your Twitter API
