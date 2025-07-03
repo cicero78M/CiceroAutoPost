@@ -677,10 +677,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
                     val aiComment = fetchAiComment(captionText, 15)
                     if (aiComment == null) {
+                        withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
                         Log.d("InstagramToolsFragment", "AI comment generation returned null")
                     }
                     val quote = if (aiComment.isNullOrBlank()) fetchRandomQuote() else null
                     if (aiComment.isNullOrBlank() && quote == null) {
+                        withContext(Dispatchers.Main) { appendLog("> random quote fetch returned null") }
                         Log.d("InstagramToolsFragment", "Random quote fetch returned null")
                     }
                     val text = aiComment ?: quote ?: ""
@@ -1064,6 +1066,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
     private fun fetchRandomQuote(): String? {
         if (token.isBlank()) {
+            appendLog("> random quote skipped: no token")
             Log.d("InstagramToolsFragment", "No token, cannot fetch random quote")
             return null
         }
@@ -1075,6 +1078,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return try {
             client.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) {
+                    appendLog("> random quote request failed: ${'$'}{resp.code}")
                     Log.d("InstagramToolsFragment", "Random quote request failed: ${resp.code}")
                     return null
                 }
@@ -1084,11 +1088,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 } catch (_: Exception) { null }
                 val quote = obj?.optString("translation")?.takeIf { it.isNotBlank() }
                 if (quote == null) {
+                    appendLog("> random quote response empty")
                     Log.d("InstagramToolsFragment", "Random quote response empty")
                 }
                 quote
             }
         } catch (e: Exception) {
+            appendLog("> random quote fetch error: ${'$'}{e.message}")
             Log.e("InstagramToolsFragment", "Random quote fetch error", e)
             null
         }
@@ -1097,10 +1103,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun fetchAiComment(caption: String, maxTokens: Int = 30): String? {
         val apiKey = BuildConfig.OPENAI_API_KEY
         if (apiKey.isBlank()) {
+            appendLog("> AI comment skipped: API key blank")
             Log.d("InstagramToolsFragment", "OpenAI API key is blank")
             return null
         }
         if (caption.isBlank()) {
+            appendLog("> AI comment skipped: caption empty")
             Log.d("InstagramToolsFragment", "Caption empty, skipping AI comment")
             return null
         }
@@ -1122,6 +1130,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return try {
             client.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) {
+                    appendLog("> OpenAI request failed: ${'$'}{resp.code}")
                     Log.d("InstagramToolsFragment", "OpenAI request failed: ${resp.code}")
                     return null
                 }
@@ -1135,6 +1144,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     ?.trim()
             }
         } catch (e: Exception) {
+            appendLog("> OpenAI call error: ${'$'}{e.message}")
             Log.e("InstagramToolsFragment", "OpenAI call error", e)
             null
         }
