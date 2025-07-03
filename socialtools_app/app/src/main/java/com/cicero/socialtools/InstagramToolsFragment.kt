@@ -806,6 +806,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     "> found post: https://instagram.com/p/$code",
                     animate = true
                 )
+                post.caption?.let {
+                    appendLog(
+                        "> caption: $it",
+                        animate = true
+                    )
+                }
                 delay(500)
             }
             appendLog(
