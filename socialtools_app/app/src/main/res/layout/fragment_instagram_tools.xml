@@ -181,6 +181,16 @@
             android:text="Start"
             android:layout_margin="16dp" />
 
+        <ImageButton
+            android:id="@+id/button_clear_logs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_clear_log"
+            android:contentDescription="@string/clear_logs"
+            android:layout_marginEnd="16dp" />
+
         <ScrollView
             android:id="@+id/log_scroll"
             android:layout_width="match_parent"

@@ -27,5 +27,6 @@
     <string name="login_failed">Login gagal</string>
     <string name="loading">Memuat…</string>
     <string name="start">Start</string>
+    <string name="clear_logs">Clear Logs</string>
     <string name="whatsapp_message_registration">Halo,\nTerima kasih telah menggunakan aplikasi Social Tools.\n\nBerikut panduan registrasi ulang:\n1. Buka Wabot lalu kirim perintah /register.\n2. Masukkan NRP dan nomor WhatsApp Anda.\n3. Tunggu konfirmasi dari admin.\n\nUntuk menambahkan akun Instagram dan TikTok via Wabot:\n1. Kirim perintah /add_instagram &lt;username&gt;.\n2. Kirim perintah /add_tiktok &lt;username&gt;.\n\nTerima kasih.</string>
 </resources>
