@@ -9,10 +9,10 @@ class InstagramToolsFragmentTest {
     @Test
     fun buildRequestJsonHandlesNewlines() {
         val caption = "Hello\nWorld"
-        val jsonStr = buildOpenAiRequestJson(caption, 15)
+        val jsonStr = buildOpenAiRequestJson(caption)
         val obj = JSONObject(jsonStr)
         assertEquals("gpt-3.5-turbo", obj.getString("model"))
-        assertEquals(15, obj.getInt("max_tokens"))
+        assertTrue(!obj.has("max_tokens"))
         val msg = obj.getJSONArray("messages").getJSONObject(0)
         assertEquals("user", msg.getString("role"))
         val content = msg.getString("content")
