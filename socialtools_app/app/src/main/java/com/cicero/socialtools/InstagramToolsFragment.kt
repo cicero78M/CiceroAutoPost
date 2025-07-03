@@ -631,9 +631,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     val code = item.code
                     val captionText = item.caption?.text ?: ""
                     Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
-                    // Generate a friendly and supportive comment for the post
-                    // caption using OpenAI with a 30 token limit
-                    val aiComment = fetchAiComment(captionText, 30)
+                    // Generate a friendly and supportive comment for the post caption
+                    // using OpenAI with a 15-word limit
+                    val aiComment = fetchAiComment(captionText)
                     if (aiComment == null) {
                         withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
                         Log.d("InstagramToolsFragment", "AI comment generation returned null")
@@ -1029,7 +1029,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private fun fetchAiComment(caption: String, maxTokens: Int = 30): String? {
+    private fun fetchAiComment(caption: String): String? {
         val apiKey = BuildConfig.OPENAI_API_KEY
         if (apiKey.isBlank()) {
             appendLog("> AI comment skipped: API key blank")
@@ -1042,7 +1042,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             return null
         }
         Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
-        val json = buildOpenAiRequestJson(caption, maxTokens)
+        val json = buildOpenAiRequestJson(caption)
         val client = OkHttpClient()
         val req = Request.Builder()
             .url("https://api.openai.com/v1/chat/completions")
@@ -1063,11 +1063,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 Log.d("InstagramToolsFragment", "OpenAI raw response: ${'$'}{bodyStr?.take(60)}")
                 val obj = JSONObject(bodyStr ?: "{}")
-                obj.getJSONArray("choices")
+                val text = obj.getJSONArray("choices")
                     .optJSONObject(0)
                     ?.optJSONObject("message")
                     ?.optString("content")
                     ?.trim()
+                text?.let { limitWords(it, 15) }
             }
         } catch (e: Exception) {
             val details = e.stackTraceToString()
@@ -1077,9 +1078,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    internal fun buildOpenAiRequestJson(caption: String, maxTokens: Int = 30): String {
-        val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung untuk " +
-                "caption berikut. Gunakan nada yang ringan dan tulus: " + caption
+    internal fun buildOpenAiRequestJson(caption: String): String {
+        val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung. " +
+                "Maksimal 15 kata. Gunakan nada ringan dan tulus untuk caption berikut: " + caption
         val message = JSONObject().apply {
             put("role", "user")
             put("content", prompt)
@@ -1087,7 +1088,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return JSONObject().apply {
             put("model", "gpt-3.5-turbo")
             put("messages", org.json.JSONArray().put(message))
-            put("max_tokens", maxTokens)
         }.toString()
     }
 
@@ -1098,6 +1098,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             appendLog(".", animate = false)
             remaining -= 5000
         }
+    }
+
+    private fun limitWords(text: String, maxWords: Int): String {
+        val words = text.split(Regex("\\s+")).filter { it.isNotBlank() }
+        return words.take(maxWords).joinToString(" ").trim()
     }
 
 
