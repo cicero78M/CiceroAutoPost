@@ -260,7 +260,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 if (login.challenge != null) {
                     login = challengeHandler.accept(client, login)
-                    client.setLoggedInState(login)
+                    runCatching {
+                        val method = IGClient::class.java.getDeclaredMethod(
+                            "setLoggedInState",
+                            LoginResponse::class.java
+                        )
+                        method.isAccessible = true
+                        method.invoke(client, login)
+                    }
                 }
                 login
             }.join()
