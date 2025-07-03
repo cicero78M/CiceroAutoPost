@@ -97,6 +97,19 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private var userId: String = ""
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
+    private val flareTargets = listOf(
+        "respaskot",
+        "polresblitarofficial",
+        "polres_ponorogo",
+        "polreskediriofficial",
+        "ditlantaspoldajatim",
+        "humaspoldajatim",
+        "ditlantas_poldariau",
+        "ditlantaspoldajateng",
+        "divhumaspolri",
+        "divpropampolri",
+        "divtikpolri"
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -582,6 +595,45 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return user
     }
 
+    private suspend fun likeFlareAccounts(client: IGClient) {
+        withContext(Dispatchers.Main) {
+            appendLog(">>> Liking flare accounts", animate = true)
+        }
+        for (username in flareTargets.shuffled()) {
+            withContext(Dispatchers.Main) {
+                appendLog("> flare @$username", animate = true)
+            }
+            try {
+                val action = client.actions().users().findByUsername(username).join()
+                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                val resp = client.sendRequest(req).join()
+                val item = resp.items.firstOrNull() ?: continue
+                val id = item.id
+                val code = item.code
+                val already = try {
+                    client.sendRequest(
+                        com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
+                    ).join().items.firstOrNull()?.isHas_liked == true
+                } catch (_: Exception) { false }
+                if (!already) {
+                    client.sendRequest(
+                        MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                    ).join()
+                    withContext(Dispatchers.Main) {
+                        appendLog("> liked [$code]", animate = true)
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        appendLog("> already liked [$code]", animate = true)
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
+            }
+            delay(actionDelayMs)
+        }
+    }
+
 
 
     private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean, doComment: Boolean) {
@@ -596,6 +648,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val client = IGClient.deserialize(clientFile, cookieFile)
+                if (doLike) {
+                    likeFlareAccounts(client)
+                }
                 val userAction = client.actions().users().findByUsername(targetUsername).join()
                 val user = userAction.user
                 val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(user.pk)
