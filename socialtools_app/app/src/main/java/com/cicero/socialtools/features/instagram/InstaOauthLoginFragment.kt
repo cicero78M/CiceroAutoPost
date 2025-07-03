@@ -8,6 +8,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.cicero.socialtools.BuildConfig
+import com.cicero.socialtools.R
 
 class InstaOauthLoginFragment : Fragment(R.layout.fragment_insta_oauth_login) {
     @SuppressLint("SetJavaScriptEnabled")
