@@ -26,6 +26,8 @@ android {
         buildConfigField("String", "TWITTER_CONSUMER_SECRET", "\"${envProps["TWITTER_CONSUMER_SECRET"] ?: ""}\"")
         buildConfigField("String", "IG_GRAPH_TOKEN", "\"${envProps["IG_GRAPH_TOKEN"] ?: ""}\"")
         buildConfigField("String", "IG_GRAPH_USER_ID", "\"${envProps["IG_GRAPH_USER_ID"] ?: ""}\"")
+        buildConfigField("String", "IG_APP_ID", "\"${envProps["IG_APP_ID"] ?: ""}\"")
+        buildConfigField("String", "IG_REDIRECT_URI", "\"${envProps["IG_REDIRECT_URI"] ?: ""}\"")
     }
 
     buildFeatures {

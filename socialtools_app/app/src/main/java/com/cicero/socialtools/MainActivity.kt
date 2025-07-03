@@ -13,10 +13,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         val fragments = listOf<Fragment>(
-            DashboardFragment(),
-            InstaFragment(),
-            InstagramToolsFragment(),
-            ProfileFragment()
+            InstaOauthLoginFragment(),
+            InstagramToolsFragment()
         )
 
         val viewPager = findViewById<ViewPager2>(R.id.view_pager)
@@ -29,10 +27,8 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNav.setOnItemSelectedListener { item ->
             viewPager.currentItem = when (item.itemId) {
-                R.id.nav_dashboard -> 0
-                R.id.nav_insta -> 1
-                R.id.nav_instagram_tools -> 2
-                R.id.nav_profile -> 3
+                R.id.nav_insta_login -> 0
+                R.id.nav_instagram_tools -> 1
                 else -> 0
             }
             true
@@ -41,10 +37,8 @@ class MainActivity : AppCompatActivity() {
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 val selected = when (position) {
-                    0 -> R.id.nav_dashboard
-                    1 -> R.id.nav_insta
-                    2 -> R.id.nav_instagram_tools
-                    else -> R.id.nav_profile
+                    0 -> R.id.nav_insta_login
+                    else -> R.id.nav_instagram_tools
                 }
                 if (bottomNav.selectedItemId != selected) {
                     bottomNav.selectedItemId = selected
@@ -52,6 +46,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        bottomNav.selectedItemId = R.id.nav_dashboard
+        bottomNav.selectedItemId = R.id.nav_insta_login
     }
 }
