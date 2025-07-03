@@ -117,14 +117,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Likes"
-                android:checked="true" />
+                android:checked="false" />
 
             <CheckBox
                 android:id="@+id/checkbox_repost"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Repost"
-                android:checked="true"
+                android:checked="false"
                 android:layout_marginStart="16dp" />
 
             <CheckBox
@@ -132,7 +132,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Komentar"
-                android:checked="true"
+                android:checked="false"
                 android:layout_marginStart="16dp" />
         </LinearLayout>
 
