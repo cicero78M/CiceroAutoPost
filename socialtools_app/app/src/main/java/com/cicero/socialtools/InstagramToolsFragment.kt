@@ -857,6 +857,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 for (post in posts) {
                     val code = post.code
                     val id = post.id
+                    post.caption?.let {
+                        appendLog("> caption: ${'$'}it", animate = true)
+                    }
                     commentFlareAccounts(client, 5)
                     val text = withContext(Dispatchers.IO) {
                         fetchAiComment(post.caption ?: "") ?: fetchRandomQuote()
