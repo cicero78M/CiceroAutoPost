@@ -18,6 +18,8 @@ public final class BuildConfig {
   // Field from default config.
   public static final String IG_REDIRECT_URI = "";
   // Field from default config.
+  public static final String OPENAI_API_KEY = "";
+  // Field from default config.
   public static final String TWITTER_CONSUMER_KEY = "";
   // Field from default config.
   public static final String TWITTER_CONSUMER_SECRET = "";

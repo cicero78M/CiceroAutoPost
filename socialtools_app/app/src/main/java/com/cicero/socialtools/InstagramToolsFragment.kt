@@ -3,33 +3,26 @@ package com.cicero.socialtools
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Bundle
+import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.result.contract.ActivityResultContracts
+import android.webkit.WebSettings
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import android.util.Log
-import android.provider.Settings
-import android.webkit.WebSettings
-import android.os.Build
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import com.github.instagram4j.instagram4j.exceptions.IGResponseException
-import com.github.instagram4j.instagram4j.responses.accounts.LoginResponse
 import com.bumptech.glide.Glide
+import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.IGDevice
-import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
-import com.cicero.socialtools.BuildConfig
+import com.github.instagram4j.instagram4j.exceptions.IGResponseException
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -38,6 +31,7 @@ import com.github.instagram4j.instagram4j.models.media.timeline.VideoCarouselIte
 import com.github.instagram4j.instagram4j.models.user.User
 import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
+import com.github.instagram4j.instagram4j.responses.accounts.LoginResponse
 import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +60,7 @@ data class PostInfo(
     val coverUrl: String? = null
 )
 
-@Suppress("DEPRECATION")
+@Suppress("DEPRECATION", "UNUSED_EXPRESSION")
 class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var loginContainer: View
     private lateinit var profileContainer: View
@@ -139,6 +133,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         setHasOptionsMenu(true)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val username = view.findViewById<EditText>(R.id.input_username)
@@ -165,9 +160,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         actionDelayMs = delaySeekBar.progress * 1000L
         delayText.text = "Delay: ${delaySeekBar.progress} detik"
         delaySeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+            @SuppressLint("SetTextI18n")
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 actionDelayMs = progress * 1000L
-                delayText.text = "Delay: ${progress} detik"
+                delayText.text = "Delay: $progress detik"
             }
 
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -230,6 +226,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     }
 
 
+    @SuppressLint("HardwareIds")
     private fun loginWithDeviceInfo(
         user: String,
         pass: String,
@@ -657,7 +654,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                 }
                 if (!commented) {
-                    val info = "skipped ${'$'}skippedNoText, failed ${'$'}failed"
+                    "skipped ${'$'}skippedNoText, failed ${'$'}failed"
                     withContext(Dispatchers.Main) {
                         appendLog("> all recent posts already commented or no text (${'$'}info)", animate = true)
                     }
@@ -796,7 +793,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             ).join()
                         }.items.firstOrNull()?.isHas_liked == true
                     } catch (_: Exception) { false }
-                    val statusText = if (alreadyLiked) "already liked" else "not yet liked"
+                    if (alreadyLiked) "already liked" else "not yet liked"
                     appendLog("> status: ${'$'}statusText", animate = true)
                     if (!alreadyLiked) {
                         try {
@@ -1077,7 +1074,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    internal fun buildOpenAiRequestJson(caption: String, maxTokens: Int = 30): String {
+    private fun buildOpenAiRequestJson(caption: String, maxTokens: Int = 30): String {
         val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung untuk " +
                 "caption berikut. Gunakan nada yang ringan dan tulus: " + caption
         val message = JSONObject().apply {
