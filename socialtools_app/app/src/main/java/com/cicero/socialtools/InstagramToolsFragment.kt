@@ -120,14 +120,16 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         val username = flareTargets.random()
         withContext(Dispatchers.Main) { appendLog("> scrolling @$username", animate = true) }
         try {
-            val action = client.actions().users().findByUsername(username).join()
-            var maxId: String? = null
-            repeat(3) {
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk, maxId)
-                val resp = client.sendRequest(req).join()
-                maxId = resp.next_max_id
-                if (maxId == null) return
-                delay(500)
+            withContext(Dispatchers.IO) {
+                val action = client.actions().users().findByUsername(username).join()
+                var maxId: String? = null
+                repeat(3) {
+                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk, maxId)
+                    val resp = client.sendRequest(req).join()
+                    maxId = resp.next_max_id
+                    if (maxId == null) return@withContext
+                    delay(500)
+                }
             }
         } catch (e: Exception) {
             withContext(Dispatchers.Main) { appendLog("Error scroll @$username: ${e.message}") }
@@ -580,23 +582,31 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             try {
-                val action = client.actions().users().findByUsername(username).join()
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
-                val resp = client.sendRequest(req).join()
+                val action = withContext(Dispatchers.IO) {
+                    client.actions().users().findByUsername(username).join()
+                }
+                val resp = withContext(Dispatchers.IO) {
+                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                    client.sendRequest(req).join()
+                }
                 val candidates = resp.items.take(12)
                 var liked = false
                 for (item in candidates) {
                     val id = item.id
                     val code = item.code
                     val already = try {
-                        client.sendRequest(
-                            com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                        ).join().items.firstOrNull()?.isHas_liked == true
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
+                            ).join()
+                        }.items.firstOrNull()?.isHas_liked == true
                     } catch (_: Exception) { false }
                     if (!already) {
-                        client.sendRequest(
-                            MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
-                        ).join()
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                            ).join()
+                        }
                         withContext(Dispatchers.Main) { appendLog("> liked [$code]", animate = true) }
                         liked = true
                         break
@@ -619,9 +629,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             try {
-                val action = client.actions().users().findByUsername(username).join()
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
-                val resp = client.sendRequest(req).join()
+                val action = withContext(Dispatchers.IO) {
+                    client.actions().users().findByUsername(username).join()
+                }
+                val resp = withContext(Dispatchers.IO) {
+                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                    client.sendRequest(req).join()
+                }
                 val candidates = resp.items.take(12)
                 var commented = false
                 var skippedNoText = 0
@@ -633,7 +647,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
                     // Generate a friendly and supportive comment for the post caption
                     // using OpenAI with a 15-word limit
-                    val aiComment = fetchAiComment(captionText)
+                    val aiComment = withContext(Dispatchers.IO) { fetchAiComment(captionText) }
                     if (aiComment == null) {
                         withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
                         Log.d("InstagramToolsFragment", "AI comment generation returned null")
@@ -645,9 +659,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         continue
                     }
                     try {
-                        client.sendRequest(
-                            com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
-                        ).join()
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
+                            ).join()
+                        }
                         withContext(Dispatchers.Main) { appendLog("> commented [$code]", animate = true) }
                         commented = true
                         break
@@ -752,7 +768,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         doRepost: Boolean,
         doComment: Boolean
     ) {
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             for (post in posts) {
                 val code = post.code
                 appendLog(
@@ -898,7 +914,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun launchRepostSequence(client: IGClient, posts: List<PostInfo>) {
         Log.d("InstagramToolsFragment", "Start repost sequence")
         val toProcess = posts.filter { !repostedIds.contains(it.code) }
-        CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             for (post in toProcess) {
                 Log.d("InstagramToolsFragment", "Processing post ${'$'}{post.code}")
                 val files = withContext(Dispatchers.IO) {
