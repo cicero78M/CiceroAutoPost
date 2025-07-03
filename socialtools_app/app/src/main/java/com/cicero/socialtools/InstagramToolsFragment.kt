@@ -656,6 +656,44 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
+    private suspend fun commentFlareAccounts(client: IGClient, count: Int) {
+        withContext(Dispatchers.Main) {
+            appendLog(">>> Commenting flare accounts", animate = true)
+        }
+        for (username in flareTargets.shuffled().take(count)) {
+            withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
+            try {
+                val action = client.actions().users().findByUsername(username).join()
+                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                val resp = client.sendRequest(req).join()
+                val candidates = resp.items.take(12)
+                var commented = false
+                for (item in candidates) {
+                    val id = item.id
+                    val code = item.code
+                    val text = fetchAiComment(item.caption?.text ?: "", 15) ?: fetchRandomQuote() ?: ""
+                    if (text.isBlank()) continue
+                    try {
+                        client.sendRequest(
+                            com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
+                        ).join()
+                        withContext(Dispatchers.Main) { appendLog("> commented [$code]", animate = true) }
+                        commented = true
+                        break
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${'$'}{e.message}") }
+                    }
+                }
+                if (!commented) {
+                    withContext(Dispatchers.Main) { appendLog("> all recent posts already commented or no text", animate = true) }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
+            }
+            delay(randomDelayMs())
+        }
+    }
+
 
 
     private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean, doComment: Boolean) {
@@ -819,11 +857,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 for (post in posts) {
                     val code = post.code
                     val id = post.id
+                    commentFlareAccounts(client, 5)
                     val text = withContext(Dispatchers.IO) {
                         fetchAiComment(post.caption ?: "") ?: fetchRandomQuote()
                     } ?: ""
                     if (text.isBlank()) {
-                        delay(actionDelayMs)
+                        delay(randomDelayMs())
+                        scrollRandomFlareFeed(client)
+                        delay(randomDelayMs())
                         continue
                     }
                     try {
@@ -840,7 +881,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     } catch (e: Exception) {
                         appendLog("Error commenting: ${'$'}{e.message}")
                     }
-                    delay(actionDelayMs)
+                    delay(randomDelayMs())
+                    scrollRandomFlareFeed(client)
+                    delay(randomDelayMs())
                 }
                 appendLog(
                     ">>> Comment routine finished. ${'$'}commented posts commented.",
@@ -1017,7 +1060,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private fun fetchAiComment(caption: String): String? {
+    private fun fetchAiComment(caption: String, maxTokens: Int = 30): String? {
         val apiKey = BuildConfig.OPENAI_API_KEY
         if (apiKey.isBlank()) return null
         if (caption.isBlank()) return null
@@ -1025,7 +1068,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             {
               "model": "gpt-3.5-turbo",
               "messages": [{"role":"user","content":"Buat komentar singkat untuk caption berikut: ${caption.replace("\"", "\\\"")}"}],
-              "max_tokens": 30
+              "max_tokens": ${'$'}maxTokens
             }
         """.trimIndent()
         val client = OkHttpClient()
