@@ -14,6 +14,7 @@ credentials. It should contain the following keys:
 ```
 TWITTER_CONSUMER_KEY=your_key
 TWITTER_CONSUMER_SECRET=your_secret
+OPENAI_API_KEY=sk-...
 ```
 
 These values will be read by Gradle when building the app.

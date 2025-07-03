@@ -22,6 +22,7 @@ import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
+import com.cicero.socialtools.BuildConfig
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -818,7 +819,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 for (post in posts) {
                     val code = post.code
                     val id = post.id
-                    val text = withContext(Dispatchers.IO) { fetchRandomQuote() } ?: ""
+                    val text = withContext(Dispatchers.IO) {
+                        fetchAiComment(post.caption ?: "") ?: fetchRandomQuote()
+                    } ?: ""
                     if (text.isBlank()) {
                         delay(actionDelayMs)
                         continue
@@ -1008,6 +1011,40 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     JSONObject(body ?: "{}").optJSONObject("data")
                 } catch (_: Exception) { null }
                 obj?.optString("translation")?.takeIf { it.isNotBlank() }
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun fetchAiComment(caption: String): String? {
+        val apiKey = BuildConfig.OPENAI_API_KEY
+        if (apiKey.isBlank()) return null
+        if (caption.isBlank()) return null
+        val json = """
+            {
+              "model": "gpt-3.5-turbo",
+              "messages": [{"role":"user","content":"Buat komentar singkat untuk caption berikut: ${caption.replace("\"", "\\\"")}"}],
+              "max_tokens": 30
+            }
+        """.trimIndent()
+        val client = OkHttpClient()
+        val req = Request.Builder()
+            .url("https://api.openai.com/v1/chat/completions")
+            .header("Authorization", "Bearer $apiKey")
+            .header("Content-Type", "application/json")
+            .post(json.toRequestBody("application/json; charset=utf-8".toMediaType()))
+            .build()
+        return try {
+            client.newCall(req).execute().use { resp ->
+                if (!resp.isSuccessful) return null
+                val body = resp.body?.string()
+                val obj = JSONObject(body ?: "{}")
+                obj.getJSONArray("choices")
+                    .optJSONObject(0)
+                    ?.optJSONObject("message")
+                    ?.optString("content")
+                    ?.trim()
             }
         } catch (_: Exception) {
             null
