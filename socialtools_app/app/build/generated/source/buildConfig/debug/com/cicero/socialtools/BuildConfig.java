@@ -10,9 +10,13 @@ public final class BuildConfig {
   public static final int VERSION_CODE = 1;
   public static final String VERSION_NAME = "1.0.0";
   // Field from default config.
+  public static final String IG_APP_ID = "";
+  // Field from default config.
   public static final String IG_GRAPH_TOKEN = "";
   // Field from default config.
   public static final String IG_GRAPH_USER_ID = "";
+  // Field from default config.
+  public static final String IG_REDIRECT_URI = "";
   // Field from default config.
   public static final String TWITTER_CONSUMER_KEY = "";
   // Field from default config.
