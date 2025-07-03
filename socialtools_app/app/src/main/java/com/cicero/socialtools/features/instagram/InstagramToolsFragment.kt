@@ -492,7 +492,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
         logContainer.addView(tv)
         CoroutineScope(Dispatchers.Main).launch {
-            if (animate) {
+            if (animate && text.length <= 100) {
                 for (c in text) {
                     tv.append(c.toString())
                     delay(30)
