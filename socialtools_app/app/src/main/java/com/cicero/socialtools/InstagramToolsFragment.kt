@@ -1042,17 +1042,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             return null
         }
         Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
-        val prompt =
-            "Buat komentar Instagram yang ceria, bersahabat, dan mendukung untuk " +
-                "caption berikut. Gunakan nada yang ringan dan tulus: " +
-                caption.replace("\"", "\\\"")
-        val json = """
-            {
-              "model": "gpt-3.5-turbo",
-              "messages": [{"role":"user","content":"${'$'}prompt"}],
-              "max_tokens": ${'$'}maxTokens
-            }
-        """.trimIndent()
+        val json = buildOpenAiRequestJson(caption, maxTokens)
         val client = OkHttpClient()
         val req = Request.Builder()
             .url("https://api.openai.com/v1/chat/completions")
@@ -1085,6 +1075,20 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             Log.e("InstagramToolsFragment", "OpenAI call error", e)
             null
         }
+    }
+
+    internal fun buildOpenAiRequestJson(caption: String, maxTokens: Int = 30): String {
+        val prompt = "Buat komentar Instagram yang ceria, bersahabat, dan mendukung untuk " +
+                "caption berikut. Gunakan nada yang ringan dan tulus: " + caption
+        val message = JSONObject().apply {
+            put("role", "user")
+            put("content", prompt)
+        }
+        return JSONObject().apply {
+            put("model", "gpt-3.5-turbo")
+            put("messages", org.json.JSONArray().put(message))
+            put("max_tokens", maxTokens)
+        }.toString()
     }
 
     private suspend fun showWaitingDots(duration: Long) {
