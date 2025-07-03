@@ -668,11 +668,17 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 val resp = client.sendRequest(req).join()
                 val candidates = resp.items.take(12)
                 var commented = false
+                var skippedNoText = 0
+                var failed = 0
                 for (item in candidates) {
                     val id = item.id
                     val code = item.code
                     val text = fetchAiComment(item.caption?.text ?: "", 15) ?: fetchRandomQuote() ?: ""
-                    if (text.isBlank()) continue
+                    if (text.isBlank()) {
+                        skippedNoText++
+                        withContext(Dispatchers.Main) { appendLog("> skip [$code] - no comment text") }
+                        continue
+                    }
                     try {
                         client.sendRequest(
                             com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
@@ -681,11 +687,15 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         commented = true
                         break
                     } catch (e: Exception) {
+                        failed++
                         withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${'$'}{e.message}") }
                     }
                 }
                 if (!commented) {
-                    withContext(Dispatchers.Main) { appendLog("> all recent posts already commented or no text", animate = true) }
+                    val info = "skipped ${'$'}skippedNoText, failed ${'$'}failed"
+                    withContext(Dispatchers.Main) {
+                        appendLog("> all recent posts already commented or no text (${'$'}info)", animate = true)
+                    }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
