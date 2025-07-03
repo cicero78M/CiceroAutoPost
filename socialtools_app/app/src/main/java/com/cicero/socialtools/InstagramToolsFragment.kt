@@ -1080,7 +1080,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     ?.trim()
             }
         } catch (e: Exception) {
-            appendLog("> OpenAI call error: ${'$'}{e.javaClass.simpleName}: ${'$'}{e.message}")
+            val details = e.stackTraceToString()
+            appendLog("> OpenAI call error: ${'$'}{e.javaClass.simpleName}: ${'$'}{e.message}\n$details")
             Log.e("InstagramToolsFragment", "OpenAI call error", e)
             null
         }
