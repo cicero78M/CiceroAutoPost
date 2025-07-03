@@ -5,12 +5,5 @@
         android:icon="@drawable/ic_logout"
         android:title="Logout"
         android:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/action_register_premium"
-        android:title="Daftar Premium"
-        android:showAsAction="never" />
-    <item
-        android:id="@+id/action_confirm_subscription"
-        android:title="@string/subscription_confirm_menu"
-        android:showAsAction="never" />
+    <!-- Removed premium registration and confirmation actions -->
 </menu>
