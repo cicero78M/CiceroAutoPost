@@ -114,6 +114,24 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
     private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
 
+    private suspend fun scrollRandomFlareFeed(client: IGClient) {
+        val username = flareTargets.random()
+        withContext(Dispatchers.Main) { appendLog("> scrolling @$username", animate = true) }
+        try {
+            val action = client.actions().users().findByUsername(username).join()
+            var maxId: String? = null
+            repeat(3) {
+                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk, maxId)
+                val resp = client.sendRequest(req).join()
+                maxId = resp.next_max_id
+                if (maxId == null) return
+                delay(500)
+            }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) { appendLog("Error scroll @$username: ${e.message}") }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
@@ -773,6 +791,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             appendLog("Error liking: ${'$'}{e.message}")
                         }
                     }
+                    delay(randomDelayMs())
+                    scrollRandomFlareFeed(client)
                     delay(randomDelayMs())
                 }
                 appendLog(
