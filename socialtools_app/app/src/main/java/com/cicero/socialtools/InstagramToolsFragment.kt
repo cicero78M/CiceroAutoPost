@@ -83,6 +83,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     // Removed Twitter and TikTok UI elements
     private lateinit var targetLinkInput: EditText
     private val repostedIds = mutableSetOf<String>()
+    private val likedIds = mutableSetOf<String>()
+    private val commentedIds = mutableSetOf<String>()
     private val clientFile: File by lazy { File(requireContext().filesDir, "igclient.ser") }
     private val cookieFile: File by lazy { File(requireContext().filesDir, "igcookie.ser") }
     private var currentUsername: String? = null
@@ -180,6 +182,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         userId = authPrefs.getString("userId", "") ?: ""
         val repostPrefs = requireContext().getSharedPreferences("reposted", Context.MODE_PRIVATE)
         repostedIds.addAll(repostPrefs.getStringSet("ids", emptySet()) ?: emptySet())
+        val likePrefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
+        likedIds.addAll(likePrefs.getStringSet("ids", emptySet()) ?: emptySet())
+        val commentPrefs = requireContext().getSharedPreferences("commented", Context.MODE_PRIVATE)
+        commentedIds.addAll(commentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
         fetchTargetAccount()
 
         startButton.setOnClickListener {
@@ -721,7 +727,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     animate = true
                 )
                 var liked = 0
-                for (post in posts) {
+                for (post in posts.filter { !likedIds.contains(it.code) }) {
                     appendLog("> processing target post [${'$'}{post.code}]", animate = true)
                     likeFlareAccounts(client, 5)
                     val id = post.id
@@ -745,6 +751,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             }
                             appendLog("> liked post [${'$'}code]", animate = true)
                             liked++
+                            likedIds.add(code)
+                            val prefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
+                            prefs.edit().putStringSet("ids", likedIds).apply()
                         } catch (e: Exception) {
                             appendLog("Error liking: ${'$'}{e.message}")
                         }
@@ -773,7 +782,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     animate = true
                 )
                 var commented = 0
-                for (post in posts) {
+                for (post in posts.filter { !commentedIds.contains(it.code) }) {
                     val code = post.code
                     val id = post.id
                     post.caption?.let {
@@ -800,6 +809,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             animate = true
                         )
                         commented++
+                        commentedIds.add(code)
+                        val prefs = requireContext().getSharedPreferences("commented", Context.MODE_PRIVATE)
+                        prefs.edit().putStringSet("ids", commentedIds).apply()
                     } catch (e: Exception) {
                         appendLog("Error commenting: ${'$'}{e.message}")
                     }
