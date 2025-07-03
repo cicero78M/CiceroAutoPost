@@ -100,7 +100,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private var isPremium: Boolean = false
     private val flareTargets = listOf(
         "respaskot",
-        "polresblitarofficial",
+        "humas.polresblitar",
         "polres_ponorogo",
         "polreskediriofficial",
         "ditlantaspoldajatim",

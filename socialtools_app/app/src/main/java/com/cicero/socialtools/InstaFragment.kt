@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment
 class InstaFragment : Fragment(R.layout.fragment_insta) {
     private val flareTargets = listOf(
         "respaskot",
-        "humsa.polresblitar",
+        "humas.polresblitar",
         "polres_ponorogo",
         "polreskediriofficial",
         "ditlantaspoldajatim",
