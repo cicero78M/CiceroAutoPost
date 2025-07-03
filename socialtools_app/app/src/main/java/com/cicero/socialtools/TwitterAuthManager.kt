@@ -27,21 +27,21 @@ object TwitterAuthManager {
         }
     }
 
-    fun loadRequestToken(context: Context): RequestToken? {
+    private fun loadRequestToken(context: Context): RequestToken? {
         val p = prefs(context)
         val token = p.getString("request_token", null)
         val secret = p.getString("request_secret", null)
         return if (token != null && secret != null) RequestToken(token, secret) else null
     }
 
-    fun clearRequestToken(context: Context) {
+    private fun clearRequestToken(context: Context) {
         prefs(context).edit(commit = true) {
             remove("request_token")
             remove("request_secret")
         }
     }
 
-    fun saveAccessToken(context: Context, token: AccessToken) {
+    private fun saveAccessToken(context: Context, token: AccessToken) {
         prefs(context).edit(commit = true) {
             putString("token", token.token)
             putString("secret", token.tokenSecret)
@@ -55,16 +55,8 @@ object TwitterAuthManager {
         return if (token != null && secret != null) token to secret else null
     }
 
-    fun clearTokens(context: Context) {
-        prefs(context).edit(commit = true) { clear() }
-    }
-
-    fun saveLastResponse(context: Context, response: String) {
+    private fun saveLastResponse(context: Context, response: String) {
         prefs(context).edit(commit = true) { putString("last_response", response) }
-    }
-
-    fun loadLastResponse(context: Context): String? {
-        return prefs(context).getString("last_response", null)
     }
 
     fun finishAuth(context: Context, verifier: String): String {
@@ -78,7 +70,7 @@ object TwitterAuthManager {
             val access = twitter.getOAuthAccessToken(reqToken, verifier)
             saveAccessToken(context, access)
             clearRequestToken(context)
-            val user = twitter.verifyCredentials()
+            twitter.verifyCredentials()
             val response = "token=${'$'}{access.token}\nsecret=${'$'}{access.tokenSecret}\nuser=@${'$'}{user.screenName}"
             saveLastResponse(context, response)
             response
