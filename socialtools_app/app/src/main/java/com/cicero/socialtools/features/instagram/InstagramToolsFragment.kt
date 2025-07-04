@@ -27,6 +27,7 @@ import com.github.instagram4j.instagram4j.exceptions.IGLoginException
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.utils.OpenAiUtils
+import com.github.instagram4j.instagram4j.utils.IGUtils
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -50,6 +51,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.File
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
 import kotlin.random.Random
 
@@ -118,6 +120,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
     private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
     private fun randomCommentDelayMs(): Long = Random.nextLong(30000L, 120000L)
+
+    private fun createHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
+            .build()
 
     private suspend fun scrollRandomFlareFeed(client: IGClient) {
         val username = flareTargets.random()
@@ -250,9 +260,15 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         twoFactorHandler: LoginHandler,
         challengeHandler: LoginHandler
     ): IGClient {
+        val httpClient = IGUtils.defaultHttpClientBuilder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
         return IGClient.builder()
             .username(user)
             .password(pass)
+            .client(httpClient.build())
             .onTwoFactor(twoFactorHandler)
             .onChallenge(challengeHandler)
             .login()
@@ -348,7 +364,15 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         CoroutineScope(Dispatchers.IO).launch {
             if (clientFile.exists() && cookieFile.exists()) {
                 try {
-                val client = IGClient.deserialize(clientFile, cookieFile)
+                val client = IGClient.deserialize(
+                    clientFile,
+                    cookieFile,
+                    IGUtils.defaultHttpClientBuilder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(60, TimeUnit.SECONDS)
+                        .callTimeout(120, TimeUnit.SECONDS)
+                )
                 val info = client.actions().users().info(client.selfProfile.pk).join()
                 withContext(Dispatchers.Main) { displayProfile(info) }
                 ensureRemoteData(info)
@@ -367,7 +391,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         val user = username ?: return
         if (token.isBlank()) return
         CoroutineScope(Dispatchers.IO).launch {
-            val client = OkHttpClient()
+            val client = createHttpClient()
                 val req = Request.Builder()
                     .url("https://papiqo.com/api/premium-subscriptions/user/$user/active")
                     .header("Authorization", "Bearer $token")
@@ -397,7 +421,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         val username = info?.username ?: return
         if (token.isBlank()) return
         CoroutineScope(Dispatchers.IO).launch {
-            val client = OkHttpClient()
+            val client = createHttpClient()
             try {
                 val checkUserReq = Request.Builder()
                     .url("https://papiqo.com/api/insta/instagram-user?username=$username")
@@ -501,7 +525,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun fetchTargetAccount() {
         if (token.isBlank() || userId.isBlank()) return
         CoroutineScope(Dispatchers.IO).launch {
-            val client = OkHttpClient()
+            val client = createHttpClient()
             val userReq = Request.Builder()
                 .url("https://papiqo.com/api/users/$userId")
                 .header("Authorization", "Bearer $token")
@@ -692,7 +716,15 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         )
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val client = IGClient.deserialize(clientFile, cookieFile)
+                val client = IGClient.deserialize(
+                    clientFile,
+                    cookieFile,
+                    IGUtils.defaultHttpClientBuilder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(60, TimeUnit.SECONDS)
+                        .writeTimeout(60, TimeUnit.SECONDS)
+                        .callTimeout(120, TimeUnit.SECONDS)
+                )
                 val userAction = client.actions().users().findByUsername(targetUsername).join()
                 val user = userAction.user
                 val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(user.pk)
@@ -974,7 +1006,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             put("tiktok_link", JSONObject.NULL)
         }
         val body = json.toString().toRequestBody("application/json".toMediaType())
-        val client = OkHttpClient()
+        val client = createHttpClient()
         val req = Request.Builder()
             .url("https://papiqo.com/api/link-reports")
             .header("Authorization", "Bearer $token")
@@ -1030,7 +1062,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun downloadUrl(url: String, file: File) {
         try {
             appendLog("> fetching $url", animate = true)
-            val client = OkHttpClient()
+            val client = createHttpClient()
             val req = Request.Builder().url(url).build()
             client.newCall(req).execute().use { resp ->
                 if (!resp.isSuccessful) throw java.io.IOException("HTTP ${resp.code}")
@@ -1060,7 +1092,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
         Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
         val json = OpenAiUtils.buildRequestJson(caption)
-        val client = OkHttpClient()
+        val client = createHttpClient()
         val req = Request.Builder()
             .url("https://api.openai.com/v1/chat/completions")
             .header("Authorization", "Bearer $apiKey")
@@ -1130,7 +1162,15 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         if (clientFile.exists() && cookieFile.exists()) {
-                            val client = IGClient.deserialize(clientFile, cookieFile)
+                            val client = IGClient.deserialize(
+                                clientFile,
+                                cookieFile,
+                                IGUtils.defaultHttpClientBuilder()
+                                    .connectTimeout(60, TimeUnit.SECONDS)
+                                    .readTimeout(60, TimeUnit.SECONDS)
+                                    .writeTimeout(60, TimeUnit.SECONDS)
+                                    .callTimeout(120, TimeUnit.SECONDS)
+                            )
                             client.sendRequest(AccountsLogoutRequest()).join()
                         }
                     } catch (_: Exception) {
