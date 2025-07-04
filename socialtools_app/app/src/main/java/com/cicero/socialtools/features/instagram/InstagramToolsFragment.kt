@@ -15,19 +15,13 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import android.util.Log
-import android.provider.Settings
-import android.webkit.WebSettings
 import android.os.Build
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.github.instagram4j.instagram4j.exceptions.IGResponseException
-import com.github.instagram4j.instagram4j.responses.accounts.LoginResponse
 import com.bumptech.glide.Glide
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
-import com.github.instagram4j.instagram4j.IGDevice
-import com.github.instagram4j.instagram4j.IGAndroidDevice
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
 import com.cicero.socialtools.BuildConfig
@@ -245,47 +239,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         twoFactorHandler: LoginHandler,
         challengeHandler: LoginHandler
     ): IGClient {
-        val androidId = Settings.Secure.getString(requireContext().contentResolver, Settings.Secure.ANDROID_ID)
-        val userAgent = WebSettings.getDefaultUserAgent(requireContext())
-        val device = IGDevice(userAgent, IGAndroidDevice.CAPABILITIES, emptyMap())
-
-        val client = IGClient.builder()
+        return IGClient.builder()
             .username(user)
             .password(pass)
-            .device(device)
-            .build()
-
-        runCatching {
-            val field = IGClient::class.java.getDeclaredField("deviceId")
-            field.isAccessible = true
-            field.set(client, androidId)
-        }
-
-        val response = client.sendLoginRequest()
-            .exceptionally { tr ->
-                var login = IGResponseException.IGFailedResponse.of(tr.cause, LoginResponse::class.java)
-                if (login.two_factor_info != null) {
-                    login = twoFactorHandler.accept(client, login)
-                }
-                if (login.challenge != null) {
-                    login = challengeHandler.accept(client, login)
-                    runCatching {
-                        val method = IGClient::class.java.getDeclaredMethod(
-                            "setLoggedInState",
-                            LoginResponse::class.java
-                        )
-                        method.isAccessible = true
-                        method.invoke(client, login)
-                    }
-                }
-                login
-            }.join()
-
-        if (!client.isLoggedIn) {
-            throw IGLoginException(client, response)
-        }
-
-        return client
+            .onTwoFactor(twoFactorHandler)
+            .onChallenge(challengeHandler)
+            .login()
     }
 
 
