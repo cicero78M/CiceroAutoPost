@@ -24,6 +24,13 @@
         android:layout_marginTop="16dp"
         android:text="@string/generate_comment" />
 
+    <Button
+        android:id="@+id/button_comment_last_post"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="@string/comment_last_post" />
+
     <TextView
         android:id="@+id/text_result"
         android:layout_width="match_parent"
