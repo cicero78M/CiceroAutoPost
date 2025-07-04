@@ -674,6 +674,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 for (item in candidates) {
                     val id = item.id
                     val code = item.code
+                    withContext(Dispatchers.Main) {
+                        appendLog("> commenting [sc=$code, id=$id]", animate = true)
+                    }
                     if (flareCommentedIds.contains(code)) {
                         withContext(Dispatchers.Main) { appendLog("> skip [$code] - already commented") }
                         continue
@@ -697,7 +700,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         withContext(Dispatchers.IO) {
                             client.commentWithFallback(id, text)
                         }
-                        withContext(Dispatchers.Main) { appendLog("> commented [$code]", animate = true) }
+                        withContext(Dispatchers.Main) {
+                            appendLog("> commented [sc=$code, id=$id]", animate = true)
+                        }
                         flareCommentedIds.add(code)
                         val prefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
                         prefs.edit().putStringSet("ids", flareCommentedIds).apply()
@@ -820,12 +825,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     "> found post: https://instagram.com/p/$code",
                     animate = true
                 )
-                post.caption?.let {
-                    appendLog(
-                        "> caption: $it",
-                        animate = true
-                    )
-                }
+                // Removed caption logging
                 delay(500)
             }
             appendLog(
@@ -902,9 +902,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 for (post in posts.filter { !commentedIds.contains(it.code) }) {
                     val code = post.code
                     val id = post.id
-                    post.caption?.let {
-                        appendLog("> caption: $it", animate = true)
-                    }
+                    appendLog("> commenting [sc=$code, id=$id]", animate = true)
                     commentFlareAccounts(client, 5)
                     val text = withContext(Dispatchers.IO) {
                         fetchAiComment(post.caption ?: "")
@@ -920,7 +918,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             client.commentWithFallback(id, text)
                         }
                         appendLog(
-                            "> commented on [$code]",
+                            "> commented on [sc=$code, id=$id]",
                             animate = true
                         )
                         commented++
