@@ -594,7 +594,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             val friendship = withContext(Dispatchers.IO) {
                 action.getFriendship().join()
             }
-            if (!friendship.following) {
+            if (!friendship.isFollowing) {
                 withContext(Dispatchers.IO) {
                     action.action(FriendshipsActionRequest.FriendshipsAction.CREATE).join()
                 }
