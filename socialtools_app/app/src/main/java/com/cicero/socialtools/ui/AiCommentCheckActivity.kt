@@ -22,9 +22,18 @@ import java.io.File
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest
+import java.util.concurrent.TimeUnit
 
 /** Simple screen to test AI comment generation using OpenAI. */
 class AiCommentCheckActivity : AppCompatActivity() {
+
+    private fun createHttpClient(): OkHttpClient =
+        OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .callTimeout(120, TimeUnit.SECONDS)
+            .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,7 +73,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
         }
 
         val json = OpenAiUtils.buildRequestJson(caption)
-        val client = OkHttpClient()
+        val client = createHttpClient()
         val req = Request.Builder()
             .url("https://api.openai.com/v1/chat/completions")
             .header("Authorization", "Bearer $apiKey")
