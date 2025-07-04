@@ -694,9 +694,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                     try {
                         withContext(Dispatchers.IO) {
-                            client.sendRequest(
-                                com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
-                            ).join()
+                            client.commentWithFallback(id, text)
                         }
                         withContext(Dispatchers.Main) { appendLog("> commented [$code]", animate = true) }
                         flareCommentedIds.add(code)
@@ -918,9 +916,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                     try {
                         withContext(Dispatchers.IO) {
-                            client.sendRequest(
-                                com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest(id, text)
-                            ).join()
+                            client.commentWithFallback(id, text)
                         }
                         appendLog(
                             "> commented on [$code]",

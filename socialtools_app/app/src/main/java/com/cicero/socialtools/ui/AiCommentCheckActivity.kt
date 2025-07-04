@@ -21,7 +21,7 @@ import org.json.JSONObject
 import java.io.File
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
-import com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest
+import com.cicero.socialtools.utils.commentWithFallback
 import java.util.concurrent.TimeUnit
 
 /** Simple screen to test AI comment generation using OpenAI. */
@@ -136,9 +136,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
                     }
                     return@launch
                 }
-                client.sendRequest(
-                    MediaCommentRequest(item.id, commentText)
-                ).join()
+                client.commentWithFallback(item.id, commentText)
                 withContext(Dispatchers.Main) {
                     resultView.text = "Comment posted: $commentText"
                 }
