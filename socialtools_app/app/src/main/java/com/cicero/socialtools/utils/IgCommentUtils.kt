@@ -15,24 +15,25 @@ suspend fun IGClient.commentWithFallback(
     shortcode: String,
     text: String
 ) {
+    val client = this
     var success = false
     try {
         withContext(Dispatchers.IO) {
-            sendRequest(MediaCommentRequest(mediaId, text)).join()
+            client.sendRequest(MediaCommentRequest(mediaId, text)).join()
         }
         success = true
     } catch (_: Exception) {
     }
     if (!success) {
         try {
-            withContext(Dispatchers.IO) { postWebComment(mediaId, text) }
+            withContext(Dispatchers.IO) { client.postWebComment(mediaId, text) }
             success = true
         } catch (_: Exception) {
         }
     }
     if (!success) {
         withContext(Dispatchers.IO) {
-            InstagramWebSession.postComment(this, mediaId, shortcode, text)
+            InstagramWebSession.postComment(client, mediaId, shortcode, text)
         }
     }
 }
