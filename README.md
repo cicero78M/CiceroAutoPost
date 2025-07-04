@@ -21,7 +21,9 @@ TWITTER_CONSUMER_SECRET=your_secret
 OPENAI_API_KEY=sk-...
 ```
 
-These values will be read by Gradle when building the app.
+These values will be read by Gradle when building the app. If the OpenAI key is
+not provided at build time, the app also checks the `OPENAI_API_KEY` environment
+variable at runtime when generating comments.
 
 To build the app:
 
