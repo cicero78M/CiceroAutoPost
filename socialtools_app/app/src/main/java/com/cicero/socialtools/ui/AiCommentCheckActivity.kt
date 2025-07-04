@@ -30,9 +30,9 @@ class AiCommentCheckActivity : AppCompatActivity() {
     private fun createHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(180, TimeUnit.SECONDS)
             .build()
 
     override fun onCreate(savedInstanceState: Bundle?) {

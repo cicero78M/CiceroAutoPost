@@ -121,9 +121,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun createHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
             .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(180, TimeUnit.SECONDS)
             .build()
 
     private suspend fun scrollRandomFlareFeed(client: IGClient) {
@@ -261,9 +261,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     ): IGClient {
         val httpClient = IGUtils.defaultHttpClientBuilder()
             .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .callTimeout(120, TimeUnit.SECONDS)
+            .callTimeout(180, TimeUnit.SECONDS)
         return IGClient.builder()
             .username(user)
             .password(pass)
@@ -368,9 +368,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     cookieFile,
                     IGUtils.defaultHttpClientBuilder()
                         .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(120, TimeUnit.SECONDS)
                         .writeTimeout(60, TimeUnit.SECONDS)
-                        .callTimeout(120, TimeUnit.SECONDS)
+                        .callTimeout(180, TimeUnit.SECONDS)
                 )
                 val info = client.actions().users().info(client.selfProfile.pk).join()
                 withContext(Dispatchers.Main) { displayProfile(info) }
@@ -720,9 +720,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     cookieFile,
                     IGUtils.defaultHttpClientBuilder()
                         .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(120, TimeUnit.SECONDS)
                         .writeTimeout(60, TimeUnit.SECONDS)
-                        .callTimeout(120, TimeUnit.SECONDS)
+                        .callTimeout(180, TimeUnit.SECONDS)
                 )
                 val userAction = client.actions().users().findByUsername(targetUsername).join()
                 val user = userAction.user
@@ -1184,9 +1184,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                                 cookieFile,
                                 IGUtils.defaultHttpClientBuilder()
                                     .connectTimeout(60, TimeUnit.SECONDS)
-                                    .readTimeout(60, TimeUnit.SECONDS)
+                                    .readTimeout(120, TimeUnit.SECONDS)
                                     .writeTimeout(60, TimeUnit.SECONDS)
-                                    .callTimeout(120, TimeUnit.SECONDS)
+                                    .callTimeout(180, TimeUnit.SECONDS)
                             )
                             client.sendRequest(AccountsLogoutRequest()).join()
                         }
