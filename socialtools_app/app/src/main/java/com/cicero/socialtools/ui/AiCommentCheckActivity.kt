@@ -18,6 +18,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import java.io.File
+import com.github.instagram4j.instagram4j.IGClient
+import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
+import com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest
 
 /** Simple screen to test AI comment generation using OpenAI. */
 class AiCommentCheckActivity : AppCompatActivity() {
@@ -29,6 +33,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
         val input = findViewById<EditText>(R.id.input_caption)
         val result = findViewById<TextView>(R.id.text_result)
         val button = findViewById<Button>(R.id.button_generate)
+        val commentButton = findViewById<Button>(R.id.button_comment_last_post)
 
         button.setOnClickListener {
             result.text = getString(R.string.loading)
@@ -39,6 +44,11 @@ class AiCommentCheckActivity : AppCompatActivity() {
                     result.text = responseText
                 }
             }
+        }
+
+        commentButton.setOnClickListener {
+            result.text = getString(R.string.loading)
+            commentLatestPost(result)
         }
     }
 
@@ -82,6 +92,52 @@ class AiCommentCheckActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             "Exception: ${e.javaClass.simpleName}: ${e.message}"
+        }
+    }
+
+    private fun commentLatestPost(resultView: TextView) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val clientFile = File(filesDir, "igclient.ser")
+            val cookieFile = File(filesDir, "igcookie.ser")
+            if (!clientFile.exists() || !cookieFile.exists()) {
+                withContext(Dispatchers.Main) {
+                    resultView.text = "Instagram session not found"
+                }
+                return@launch
+            }
+            try {
+                val client = IGClient.deserialize(clientFile, cookieFile)
+                val userAction = client.actions().users()
+                    .findByUsername("polresbojonegoroofficial").join()
+                val feed = client.sendRequest(
+                    FeedUserRequest(userAction.user.pk)
+                ).join()
+                val item = feed.items.firstOrNull()
+                if (item == null) {
+                    withContext(Dispatchers.Main) {
+                        resultView.text = "No posts found"
+                    }
+                    return@launch
+                }
+                val captionText = item.caption?.text ?: ""
+                val commentText = fetchAiComment(captionText)
+                if (commentText.isBlank()) {
+                    withContext(Dispatchers.Main) {
+                        resultView.text = getString(R.string.error_generating_comment)
+                    }
+                    return@launch
+                }
+                client.sendRequest(
+                    MediaCommentRequest(item.id, commentText)
+                ).join()
+                withContext(Dispatchers.Main) {
+                    resultView.text = "Comment posted: $commentText"
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    resultView.text = "Error: ${'$'}{e.message}"
+                }
+            }
         }
     }
 
