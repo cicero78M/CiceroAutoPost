@@ -12,12 +12,10 @@ automation interface on launch.
 
 ## Configuration
 
-Create a `.env` file in the repository root to provide your Twitter API
-credentials. It should contain the following keys:
+Create a `.env` file in the repository root containing any optional
+configuration values. For example:
 
 ```
-TWITTER_CONSUMER_KEY=your_key
-TWITTER_CONSUMER_SECRET=your_secret
 OPENAI_API_KEY=sk-...
 ```
 
