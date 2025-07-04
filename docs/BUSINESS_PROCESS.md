@@ -62,7 +62,7 @@ SocialToolsApp provides utilities for automating social media activity. The appl
 
 ## Background Automation Sequence
 
-The automation routine (implemented in `InstagramToolsFragment`) performs actions such as liking, reposting, and commenting in a loop over daily posts. Randomized delays are used between actions to avoid suspicious behavior. Status updates are appended to the on‑screen log and saved in a per-user log file.
+The automation routine (implemented in `InstagramToolsFragment`) performs actions such as liking, reposting, and commenting in a loop over daily posts. Randomized delays are used between actions to avoid suspicious behavior. Likes wait between 3–12 seconds, while AI-generated comment actions pause for 30–120 seconds. Status updates are appended to the on‑screen log and saved in a per‑user log file.
 
 ## Summary
 

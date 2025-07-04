@@ -114,7 +114,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     )
 
     private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
-    private fun randomCommentDelayMs(): Long = Random.nextLong(5000L, 20000L)
+    private fun randomCommentDelayMs(): Long = Random.nextLong(30000L, 120000L)
 
     private suspend fun scrollRandomFlareFeed(client: IGClient) {
         val username = flareTargets.random()
