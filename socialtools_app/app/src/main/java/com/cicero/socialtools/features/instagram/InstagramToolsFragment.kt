@@ -932,6 +932,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                                 client.actions().timeline().uploadAlbum(infos, post.caption ?: "").join()
                             }
                         }
+                        // wait to ensure upload/transcode finishes before continuing
+                        delay(3000)
                         newLink = response.media?.code?.let { "https://instagram.com/p/$it" }
                     }
                     newLink?.let {
@@ -1095,9 +1097,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private suspend fun showWaitingDots(duration: Long) {
         var remaining = duration
         while (remaining > 0) {
-            delay(5000)
+            delay(3000)
             appendLog(".", animate = false)
-            remaining -= 5000
+            remaining -= 3000
         }
     }
 
