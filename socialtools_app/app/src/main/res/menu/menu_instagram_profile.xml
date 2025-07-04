@@ -6,4 +6,8 @@
         android:title="Logout"
         android:showAsAction="ifRoom" />
     <!-- Removed premium registration and confirmation actions -->
+    <item
+        android:id="@+id/action_check_ai"
+        android:title="@string/check_ai_comment"
+        android:showAsAction="never" />
 </menu>

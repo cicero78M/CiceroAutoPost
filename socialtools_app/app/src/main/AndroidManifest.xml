@@ -26,6 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.AiCommentCheckActivity" android:exported="false" />
         <service
             android:name=".core.services.PostService"
             android:exported="false" />

@@ -1116,6 +1116,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 true
             }
+            R.id.action_check_ai -> {
+                startActivity(Intent(requireContext(), com.cicero.socialtools.ui.AiCommentCheckActivity::class.java))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
