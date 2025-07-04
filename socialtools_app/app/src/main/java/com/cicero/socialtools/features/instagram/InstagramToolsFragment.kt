@@ -2,33 +2,27 @@ package com.cicero.socialtools.features.instagram
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.content.Intent
-import android.net.Uri
-import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
-import android.util.Log
-import android.os.Build
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
+import com.cicero.socialtools.BuildConfig
+import com.cicero.socialtools.R
+import com.cicero.socialtools.utils.OpenAiUtils
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
-import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
-import com.cicero.socialtools.BuildConfig
-import com.cicero.socialtools.R
-import com.cicero.socialtools.utils.OpenAiUtils
-import com.github.instagram4j.instagram4j.utils.IGUtils
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -36,8 +30,10 @@ import com.github.instagram4j.instagram4j.models.media.timeline.TimelineVideoMed
 import com.github.instagram4j.instagram4j.models.media.timeline.VideoCarouselItem
 import com.github.instagram4j.instagram4j.models.user.User
 import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutRequest
+import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
 import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
+import com.github.instagram4j.instagram4j.utils.IGUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -52,8 +48,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.File
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 data class PostInfo(
@@ -138,7 +134,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 val action = client.actions().users().findByUsername(username).join()
                 var maxId: String? = null
                 repeat(3) {
-                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk, maxId)
+                    val req = FeedUserRequest(action.user.pk, maxId)
                     val resp = client.sendRequest(req).join()
                     maxId = resp.next_max_id
                     if (maxId == null) return@withContext
@@ -598,7 +594,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     client.actions().users().findByUsername(username).join()
                 }
                 val resp = withContext(Dispatchers.IO) {
-                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                    val req = FeedUserRequest(action.user.pk)
                     client.sendRequest(req).join()
                 }
                 val candidates = resp.items.take(12)
@@ -645,7 +641,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     client.actions().users().findByUsername(username).join()
                 }
                 val resp = withContext(Dispatchers.IO) {
-                    val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(action.user.pk)
+                    val req = FeedUserRequest(action.user.pk)
                     client.sendRequest(req).join()
                 }
                 val candidates = resp.items.take(12)
@@ -728,7 +724,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 )
                 val userAction = client.actions().users().findByUsername(targetUsername).join()
                 val user = userAction.user
-                val req = com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest(user.pk)
+                val req = FeedUserRequest(user.pk)
                 val resp = client.sendRequest(req).join()
                 val today = java.time.LocalDate.now()
                 val zone = java.time.ZoneId.systemDefault()
