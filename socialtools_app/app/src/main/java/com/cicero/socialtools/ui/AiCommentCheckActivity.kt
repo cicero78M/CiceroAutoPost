@@ -46,8 +46,11 @@ class AiCommentCheckActivity : AppCompatActivity() {
         val apiKey = BuildConfig.OPENAI_API_KEY.ifBlank {
             System.getenv("OPENAI_API_KEY") ?: ""
         }
-        if (apiKey.isBlank() || caption.isBlank()) {
-            return getString(R.string.error_generating_comment)
+        if (apiKey.isBlank()) {
+            return "API key missing"
+        }
+        if (caption.isBlank()) {
+            return "Caption empty"
         }
 
         val json = OpenAiUtils.buildRequestJson(caption)
@@ -63,7 +66,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
                 val bodyStr = resp.body?.string()
                 if (!resp.isSuccessful) {
                     Log.d("AiCommentCheck", "Error ${'$'}{resp.code} response: ${'$'}{bodyStr}")
-                    return "Error ${'$'}{resp.code}: ${'$'}{bodyStr?.take(200)}"
+                    return "Error ${'$'}{resp.code}: ${'$'}{bodyStr}".trim()
                 }
                 Log.d("AiCommentCheck", "Raw response: ${'$'}bodyStr")
                 val obj = JSONObject(bodyStr ?: "{}")
@@ -72,7 +75,10 @@ class AiCommentCheckActivity : AppCompatActivity() {
                     ?.optJSONObject("message")
                     ?.optString("content")
                     ?.trim()
-                text?.let { limitWords(it, 15) } ?: getString(R.string.error_generating_comment)
+                if (text.isNullOrBlank()) {
+                    return "Raw response: ${'$'}{bodyStr?.take(200)}"
+                }
+                limitWords(text, 15)
             }
         } catch (e: Exception) {
             "Exception: ${e.javaClass.simpleName}: ${e.message}"
