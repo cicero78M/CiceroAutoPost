@@ -296,6 +296,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     twoFactorHandler,
                     challengeHandler
                 )
+                InstagramWebSession.login(requireContext(), user, pass)
                 client.serialize(clientFile, cookieFile)
                 val info = client.actions().users().info(client.selfProfile.pk).join()
                 withContext(Dispatchers.Main) {
@@ -708,7 +709,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         }
                         try {
                             withContext(Dispatchers.IO) {
-                                client.commentWithFallback(id, text)
+                                client.commentWithFallback(requireContext(), id, code, text)
                             }
                             withContext(Dispatchers.Main) {
                                 appendLog("> commented [sc=$code, id=$id]", animate = true)
@@ -929,7 +930,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                     try {
                         withContext(Dispatchers.IO) {
-                            client.commentWithFallback(id, text)
+                            client.commentWithFallback(requireContext(), id, code, text)
                         }
                         appendLog(
                             "> commented on [sc=$code, id=$id]",
