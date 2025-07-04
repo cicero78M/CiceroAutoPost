@@ -75,10 +75,10 @@ class AiCommentCheckActivity : AppCompatActivity() {
             client.newCall(req).execute().use { resp ->
                 val bodyStr = resp.body?.string()
                 if (!resp.isSuccessful) {
-                    Log.d("AiCommentCheck", "Error ${'$'}{resp.code} response: ${'$'}{bodyStr}")
-                    return "Error ${'$'}{resp.code}: ${'$'}{bodyStr}".trim()
+                    Log.d("AiCommentCheck", "Error ${resp.code} response: ${bodyStr}")
+                    return "Error ${resp.code}: ${bodyStr}".trim()
                 }
-                Log.d("AiCommentCheck", "Raw response: ${'$'}bodyStr")
+                Log.d("AiCommentCheck", "Raw response: $bodyStr")
                 val obj = JSONObject(bodyStr ?: "{}")
                 val text = obj.getJSONArray("choices")
                     .optJSONObject(0)
@@ -86,7 +86,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
                     ?.optString("content")
                     ?.trim()
                 if (text.isNullOrBlank()) {
-                    return "Raw response: ${'$'}{bodyStr?.take(200)}"
+                    return "Raw response: ${bodyStr?.take(200)}"
                 }
                 limitWords(text, 15)
             }
@@ -135,7 +135,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    resultView.text = "Error: ${'$'}{e.message}"
+                    resultView.text = "Error: ${e.message}"
                 }
             }
         }

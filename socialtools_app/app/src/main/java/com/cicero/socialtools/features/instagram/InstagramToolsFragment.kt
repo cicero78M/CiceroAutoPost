@@ -601,7 +601,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     withContext(Dispatchers.Main) { appendLog("> all recent posts already liked", animate = true) }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
+                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
             }
             delay(randomCommentDelayMs())
         }
@@ -661,17 +661,17 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         break
                     } catch (e: Exception) {
                         failed++
-                        withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${'$'}{e.message}") }
+                        withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${e.message}") }
                     }
                 }
                 if (!commented) {
-                    val info = "skipped ${'$'}skippedNoText, failed ${'$'}failed"
+                    val info = "skipped $skippedNoText, failed $failed"
                     withContext(Dispatchers.Main) {
-                        appendLog("> all recent posts already commented or no text (${'$'}info)", animate = true)
+                        appendLog("> all recent posts already commented or no text ($info)", animate = true)
                     }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${'$'}{e.message}") }
+                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
             }
             delay(randomCommentDelayMs())
         }
@@ -792,11 +792,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 )
                 var liked = 0
                 for (post in posts.filter { !likedIds.contains(it.code) }) {
-                    appendLog("> processing target post [${'$'}{post.code}]", animate = true)
+                    appendLog("> processing target post [${post.code}]", animate = true)
                     likeFlareAccounts(client, 5)
                     val id = post.id
                     val code = post.code
-                    appendLog("> checking like status for ${'$'}code", animate = true)
+                    appendLog("> checking like status for $code", animate = true)
                     val alreadyLiked = try {
                         withContext(Dispatchers.IO) {
                             client.sendRequest(
@@ -805,7 +805,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         }.items.firstOrNull()?.isHas_liked == true
                     } catch (_: Exception) { false }
                     val statusText = if (alreadyLiked) "already liked" else "not yet liked"
-                    appendLog("> status: ${'$'}statusText", animate = true)
+                    appendLog("> status: $statusText", animate = true)
                     if (!alreadyLiked) {
                         try {
                             withContext(Dispatchers.IO) {
@@ -813,13 +813,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                                     MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
                                 ).join()
                             }
-                            appendLog("> liked post [${'$'}code]", animate = true)
+                            appendLog("> liked post [$code]", animate = true)
                             liked++
                             likedIds.add(code)
                             val prefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
                             prefs.edit().putStringSet("ids", likedIds).apply()
                         } catch (e: Exception) {
-                            appendLog("Error liking: ${'$'}{e.message}")
+                            appendLog("Error liking: ${e.message}")
                         }
                     }
                     delay(randomDelayMs())
@@ -827,7 +827,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     delay(randomDelayMs())
                 }
                 appendLog(
-                    ">>> Like routine finished. ${'$'}liked posts liked.",
+                    ">>> Like routine finished. $liked posts liked.",
                     animate = true
                 )
             }
@@ -850,7 +850,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     val code = post.code
                     val id = post.id
                     post.caption?.let {
-                        appendLog("> caption: ${'$'}it", animate = true)
+                        appendLog("> caption: $it", animate = true)
                     }
                     commentFlareAccounts(client, 5)
                     val text = withContext(Dispatchers.IO) {
@@ -877,14 +877,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         val prefs = requireContext().getSharedPreferences("commented", Context.MODE_PRIVATE)
                         prefs.edit().putStringSet("ids", commentedIds).apply()
                     } catch (e: Exception) {
-                        appendLog("Error commenting: ${'$'}{e.message}")
+                        appendLog("Error commenting: ${e.message}")
                     }
                     delay(randomCommentDelayMs())
                     scrollRandomFlareFeed(client)
                     delay(randomCommentDelayMs())
                 }
                 appendLog(
-                    ">>> Comment routine finished. ${'$'}commented posts commented.",
+                    ">>> Comment routine finished. $commented posts commented.",
                     animate = true
                 )
             }
@@ -910,16 +910,16 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         val toProcess = posts.filter { !repostedIds.contains(it.code) }
         CoroutineScope(Dispatchers.IO).launch {
             for (post in toProcess) {
-                Log.d("InstagramToolsFragment", "Processing post ${'$'}{post.code}")
+                Log.d("InstagramToolsFragment", "Processing post ${post.code}")
                 val files = withContext(Dispatchers.IO) {
-                    Log.d("InstagramToolsFragment", "Downloading media for ${'$'}{post.code}")
+                    Log.d("InstagramToolsFragment", "Downloading media for ${post.code}")
                     downloadMedia(post)
                 }
                 if (files.isEmpty()) continue
                 try {
                     var newLink: String? = null
                     withContext(Dispatchers.IO) {
-                        Log.d("InstagramToolsFragment", "Uploading ${'$'}{post.code}")
+                        Log.d("InstagramToolsFragment", "Uploading ${post.code}")
                         val response = if (post.isVideo && post.videoUrl != null) {
                             val video = files.first { it.extension == "mp4" }
                             val cover = files.firstOrNull { it.extension != "mp4" } ?: video
@@ -935,8 +935,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         newLink = response.media?.code?.let { "https://instagram.com/p/$it" }
                     }
                     newLink?.let {
-                        Log.d("InstagramToolsFragment", "Send link ${'$'}it")
-                        appendLog("> repost link: ${'$'}it", animate = true)
+                        Log.d("InstagramToolsFragment", "Send link $it")
+                        appendLog("> repost link: $it", animate = true)
                         withContext(Dispatchers.IO) { sendRepostLink(post.code, it) }
                         repostedIds.add(post.code)
                         val prefs = requireContext().getSharedPreferences("reposted", Context.MODE_PRIVATE)
@@ -945,7 +945,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     // do not delete downloaded files
                 } catch (e: Exception) {
                     Log.e("InstagramToolsFragment", "Error uploading", e)
-                    appendLog("Error uploading: ${'$'}{e.message}")
+                    appendLog("Error uploading: ${e.message}")
                 }
                 Log.d("InstagramToolsFragment", "Waiting before next post")
                 appendLog("> waiting for next post", animate = true)
@@ -1035,7 +1035,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     body.byteStream().copyTo(out)
                 }
             }
-            appendLog("> saved to ${'$'}{file.name}", animate = true)
+            appendLog("> saved to ${file.name}", animate = true)
         } catch (_: Exception) {
         }
     }
@@ -1067,14 +1067,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             client.newCall(req).execute().use { resp ->
                 val bodyStr = resp.body?.string()
                 if (!resp.isSuccessful) {
-                    appendLog("> OpenAI request failed: ${'$'}{resp.code} ${'$'}{bodyStr?.take(80)}")
+                    appendLog("> OpenAI request failed: ${resp.code} ${bodyStr?.take(80)}")
                     Log.d(
                         "InstagramToolsFragment",
-                        "OpenAI request failed: ${'$'}{resp.code} body: ${'$'}{bodyStr}"
+                        "OpenAI request failed: ${resp.code} body: ${bodyStr}"
                     )
                     return null
                 }
-                Log.d("InstagramToolsFragment", "OpenAI raw response: ${'$'}{bodyStr?.take(60)}")
+                Log.d("InstagramToolsFragment", "OpenAI raw response: ${bodyStr?.take(60)}")
                 val obj = JSONObject(bodyStr ?: "{}")
                 val text = obj.getJSONArray("choices")
                     .optJSONObject(0)
@@ -1085,7 +1085,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             }
         } catch (e: Exception) {
             val details = e.stackTraceToString()
-            appendLog("> OpenAI call error: ${'$'}{e.javaClass.simpleName}: ${'$'}{e.message}\n$details")
+            appendLog("> OpenAI call error: ${e.javaClass.simpleName}: ${e.message}\n$details")
             Log.e("InstagramToolsFragment", "OpenAI call error", e)
             null
         }
