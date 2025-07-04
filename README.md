@@ -17,6 +17,13 @@ uploading a new post, the app compares its caption against the last twelve
 uploads from the logged-in account. If a matching caption is found, the post is
 skipped to avoid re-uploading identical content.
 
+### Web Session Commenting
+
+If the standard Instagram4j session cookies are missing or invalid, the app can
+fall back to a lightweight web login managed by `InstagramWebSession`. The
+helper stores cookies in `SharedPreferences` and posts comments using the same
+headers as the desktop web client.
+
 ## Configuration
 
 Create a `.env` file in the repository root containing any optional
