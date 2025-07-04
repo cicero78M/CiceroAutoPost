@@ -20,10 +20,9 @@ skipped to avoid re-uploading identical content.
 ### Web Session Commenting
 
 If the standard Instagram4j session cookies are missing or invalid, the app can
-fall back to a lightweight web session managed by `InstagramWebSession`. When
-logging in, the app now also performs a web login so the cookies can be reused
-for future comment requests. These cookies are saved in `SharedPreferences` and
-used to issue web requests with the same headers as the desktop client.
+fall back to a lightweight web login managed by `InstagramWebSession`. The
+helper stores cookies in `SharedPreferences` and posts comments using the same
+headers as the desktop web client.
 
 ## Configuration
 
