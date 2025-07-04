@@ -151,6 +151,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         setHasOptionsMenu(true)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val username = view.findViewById<EditText>(R.id.input_username)
@@ -175,11 +176,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         delaySeekBar = view.findViewById(R.id.seekbar_delay)
         delayText = view.findViewById(R.id.text_delay_value)
         actionDelayMs = delaySeekBar.progress * 1000L
-        delayText.text = "Delay: ${delaySeekBar.progress} detik"
+        delayText.text =
+            "Delay: ${delaySeekBar.progress} detik"
         delaySeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 actionDelayMs = progress * 1000L
-                delayText.text = "Delay: ${progress} detik"
+                delayText.text = "Delay: $progress detik"
             }
 
             override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
@@ -1121,7 +1123,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     appendLog("> OpenAI request failed: ${resp.code} ${bodyStr?.take(80)}")
                     Log.d(
                         "InstagramToolsFragment",
-                        "OpenAI request failed: ${resp.code} body: ${bodyStr}"
+                        "OpenAI request failed: ${resp.code} body: $bodyStr"
                     )
                     return null
                 }
