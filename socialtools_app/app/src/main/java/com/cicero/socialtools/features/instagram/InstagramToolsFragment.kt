@@ -460,12 +460,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         appendToFile: Boolean = true,
         animate: Boolean = false
     ) {
-        val tv = TextView(requireContext()).apply {
-            typeface = android.graphics.Typeface.MONOSPACE
-            setTextColor(android.graphics.Color.parseColor("#00FF00"))
-        }
-        logContainer.addView(tv)
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+            val tv = TextView(requireContext()).apply {
+                typeface = android.graphics.Typeface.MONOSPACE
+                setTextColor(android.graphics.Color.parseColor("#00FF00"))
+            }
+            logContainer.addView(tv)
             if (animate && text.length <= 100) {
                 for (c in text) {
                     tv.append(c.toString())
