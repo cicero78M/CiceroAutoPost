@@ -33,19 +33,21 @@ class AiCommentCheckActivity : AppCompatActivity() {
             result.text = getString(R.string.loading)
             val caption = input.text.toString()
             CoroutineScope(Dispatchers.IO).launch {
-                val comment = fetchAiComment(caption)
+                val responseText = fetchAiComment(caption)
                 withContext(Dispatchers.Main) {
-                    result.text = comment ?: getString(R.string.error_generating_comment)
+                    result.text = responseText
                 }
             }
         }
     }
 
-    private fun fetchAiComment(caption: String): String? {
+    private fun fetchAiComment(caption: String): String {
         val apiKey = BuildConfig.OPENAI_API_KEY.ifBlank {
             System.getenv("OPENAI_API_KEY") ?: ""
         }
-        if (apiKey.isBlank() || caption.isBlank()) return null
+        if (apiKey.isBlank() || caption.isBlank()) {
+            return getString(R.string.error_generating_comment)
+        }
 
         val json = OpenAiUtils.buildRequestJson(caption)
         val client = OkHttpClient()
@@ -58,17 +60,19 @@ class AiCommentCheckActivity : AppCompatActivity() {
         return try {
             client.newCall(req).execute().use { resp ->
                 val bodyStr = resp.body?.string()
-                if (!resp.isSuccessful) return null
+                if (!resp.isSuccessful) {
+                    return "Error ${resp.code}: ${bodyStr?.take(200)}"
+                }
                 val obj = JSONObject(bodyStr ?: "{}")
                 val text = obj.getJSONArray("choices")
                     .optJSONObject(0)
                     ?.optJSONObject("message")
                     ?.optString("content")
                     ?.trim()
-                text?.let { limitWords(it, 15) }
+                text?.let { limitWords(it, 15) } ?: getString(R.string.error_generating_comment)
             }
-        } catch (_: Exception) {
-            null
+        } catch (e: Exception) {
+            "Exception: ${e.javaClass.simpleName}: ${e.message}"
         }
     }
 
