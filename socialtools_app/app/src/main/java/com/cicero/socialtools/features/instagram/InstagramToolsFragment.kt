@@ -85,6 +85,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var postsView: TextView
     private lateinit var followersView: TextView
     private lateinit var followingView: TextView
+    private lateinit var processTimeView: TextView
     // Removed Twitter and TikTok UI elements
     private lateinit var targetLinkInput: EditText
     private val repostedIds = mutableSetOf<String>()
@@ -97,6 +98,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private var userId: String = ""
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
+    private var startTimeMs: Long = 0L
     private val flareTargets = listOf(
         "respaskot",
         "humas.polresblitar",
@@ -184,6 +186,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         logContainer = view.findViewById(R.id.log_container)
         logScroll = view.findViewById(R.id.log_scroll)
         clearLogsButton = view.findViewById(R.id.button_clear_logs)
+        processTimeView = view.findViewById(R.id.text_process_time)
 
         clearLogsButton.setOnClickListener { clearLogs() }
 
@@ -205,6 +208,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 return@setOnClickListener
             }
             targetUsername = parseUsername(target)
+
+            startTimeMs = System.currentTimeMillis()
+            processTimeView.text = getString(R.string.loading)
 
             val doLike = likeCheckbox.isChecked
             val doRepost = repostCheckbox.isChecked
@@ -883,6 +889,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 )
                 Log.d("InstagramToolsFragment", "Start reposting posts")
                 launchRepostSequence(client, posts)
+            } else {
+                withContext(Dispatchers.Main) { onProcessComplete() }
             }
         }
     }
@@ -938,6 +946,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 ">>> Repost routine complete.",
                 animate = true
             )
+            withContext(Dispatchers.Main) { onProcessComplete() }
         }
     }
 
@@ -1085,6 +1094,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private fun limitWords(text: String, maxWords: Int): String {
         val words = text.split(Regex("\\s+")).filter { it.isNotBlank() }
         return words.take(maxWords).joinToString(" ").trim()
+    }
+
+    private fun onProcessComplete() {
+        val elapsed = System.currentTimeMillis() - startTimeMs
+        val seconds = (elapsed / 1000).toInt()
+        processTimeView.text = getString(R.string.process_time_result, seconds)
     }
 
 

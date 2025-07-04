@@ -32,4 +32,6 @@
     <string name="generate_comment">Generate Comment</string>
     <string name="error_generating_comment">Failed to generate comment</string>
     <string name="check_ai_comment">Check AI Comment</string>
+    <string name="process_time_placeholder">Process time: -</string>
+    <string name="process_time_result">Process time: %1$d s</string>
 </resources>
