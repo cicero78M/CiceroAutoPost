@@ -32,6 +32,7 @@ import com.github.instagram4j.instagram4j.models.user.User
 import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutRequest
 import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
+import com.github.instagram4j.instagram4j.requests.friendships.FriendshipsActionRequest
 import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
 import com.github.instagram4j.instagram4j.utils.IGUtils
 import kotlinx.coroutines.CoroutineScope
@@ -585,12 +586,31 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return user
     }
 
+    private suspend fun ensureFollowing(client: IGClient, username: String) {
+        try {
+            val action = withContext(Dispatchers.IO) {
+                client.actions().users().findByUsername(username).join()
+            }
+            val friendship = withContext(Dispatchers.IO) {
+                action.getFriendship().join()
+            }
+            if (!friendship.following) {
+                withContext(Dispatchers.IO) {
+                    action.action(FriendshipsActionRequest.FriendshipsAction.CREATE).join()
+                }
+                withContext(Dispatchers.Main) { appendLog("> followed @$username", animate = true) }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
     private suspend fun likeFlareAccounts(client: IGClient, count: Int) {
         withContext(Dispatchers.Main) {
             appendLog(">>> Liking flare accounts", animate = true)
         }
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
+            ensureFollowing(client, username)
             try {
                 val action = withContext(Dispatchers.IO) {
                     client.actions().users().findByUsername(username).join()
@@ -725,6 +745,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         .callTimeout(180, TimeUnit.SECONDS)
                 )
                 val userAction = client.actions().users().findByUsername(targetUsername).join()
+                ensureFollowing(client, targetUsername)
                 val user = userAction.user
                 val req = FeedUserRequest(user.pk)
                 val resp = client.sendRequest(req).join()
