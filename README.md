@@ -10,6 +10,13 @@ The app now opens straight to the Instagram tools screen. The previous
 ViewPager navigation has been removed so users are taken directly to the IG
 automation interface on launch.
 
+### Duplicate Caption Guard
+
+Reposting operations now include a check for duplicate captions. Before
+uploading a new post, the app compares its caption against the last twelve
+uploads from the logged-in account. If a matching caption is found, the post is
+skipped to avoid re-uploading identical content.
+
 ## Configuration
 
 Create a `.env` file in the repository root containing any optional
