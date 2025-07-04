@@ -1022,7 +1022,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     }
 
     private fun fetchAiComment(caption: String): String? {
-        val apiKey = BuildConfig.OPENAI_API_KEY
+        val apiKey = BuildConfig.OPENAI_API_KEY.ifBlank {
+            System.getenv("OPENAI_API_KEY") ?: ""
+        }
         if (apiKey.isBlank()) {
             appendLog("> AI comment skipped: API key blank")
             Log.d("InstagramToolsFragment", "OpenAI API key is blank")
