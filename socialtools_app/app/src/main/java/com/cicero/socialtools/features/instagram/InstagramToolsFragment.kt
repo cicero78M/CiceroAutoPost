@@ -24,6 +24,7 @@ import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.exceptions.IGLoginException
+import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.utils.OpenAiUtils
@@ -945,6 +946,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         CoroutineScope(Dispatchers.IO).launch {
             for (post in toProcess) {
                 Log.d("InstagramToolsFragment", "Processing post ${post.code}")
+                if (isCaptionDuplicate(client, post.caption)) {
+                    appendLog("> skip [${post.code}] - caption already used", animate = true)
+                    continue
+                }
                 val files = withContext(Dispatchers.IO) {
                     Log.d("InstagramToolsFragment", "Downloading media for ${post.code}")
                     downloadMedia(post)
@@ -1015,6 +1020,20 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         try {
             client.newCall(req).execute().close()
         } catch (_: Exception) {
+        }
+    }
+
+    private suspend fun isCaptionDuplicate(client: IGClient, caption: String?): Boolean {
+        if (caption.isNullOrBlank()) return false
+        return try {
+            val feed = withContext(Dispatchers.IO) {
+                val req = FeedUserRequest(client.selfProfile.pk)
+                client.sendRequest(req).join()
+            }
+            val clean = caption.trim()
+            feed.items.take(12).any { it.caption?.text?.trim() == clean }
+        } catch (_: Exception) {
+            false
         }
     }
 
