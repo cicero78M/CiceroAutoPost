@@ -984,6 +984,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 if (files.isEmpty()) continue
                 try {
+                    val fileList = files.joinToString { it.name }
+                    appendLog("> uploading [${post.code}] $fileList", animate = true)
+                    post.caption?.takeIf { it.isNotBlank() }?.let {
+                        appendLog("> caption: $it", animate = true)
+                    }
                     var newLink: String? = null
                     withContext(Dispatchers.IO) {
                         Log.d("InstagramToolsFragment", "Uploading ${post.code}")
@@ -1003,6 +1008,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         delay(uploadDelayMs)
                         newLink = response.media?.code?.let { "https://instagram.com/p/$it" }
                     }
+                    appendLog("> upload success [${post.code}]", animate = true)
                     newLink?.let {
                         Log.d("InstagramToolsFragment", "Send link $it")
                         appendLog("> repost link: $it", animate = true)
