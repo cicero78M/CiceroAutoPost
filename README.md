@@ -12,8 +12,9 @@ automation interface on launch.
 
 ## Configuration
 
-Create a `.env` file in the repository root containing any optional
-configuration values. For example:
+Create a `.env` file in the repository root **or** inside the
+`socialtools_app` directory containing any optional configuration values.
+For example:
 
 ```
 OPENAI_API_KEY=sk-...

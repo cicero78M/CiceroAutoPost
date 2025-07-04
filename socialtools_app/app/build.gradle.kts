@@ -6,9 +6,16 @@ plugins {
 }
 
 val envProps = Properties().apply {
-    val envFile = rootProject.file(".env")
-    if (envFile.exists()) {
-        envFile.inputStream().use { load(it) }
+    // Attempt to load .env from the project directory or repository root
+    val possibleLocations = listOf(
+        rootProject.file(".env"),
+        rootProject.rootDir.parentFile.resolve(".env")
+    )
+    for (file in possibleLocations) {
+        if (file.exists()) {
+            file.inputStream().use { load(it) }
+            break
+        }
     }
 }
 
