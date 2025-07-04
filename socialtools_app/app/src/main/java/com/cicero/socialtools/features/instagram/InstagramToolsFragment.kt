@@ -74,6 +74,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var delaySeekBar: android.widget.SeekBar
     private lateinit var delayText: TextView
     private var actionDelayMs: Long = 30000L
+    private val uploadDelayMs: Long = 10000L
+    private val postDelayMs: Long = 120000L
     private lateinit var badgeView: ImageView
     private lateinit var logContainer: android.widget.LinearLayout
     private lateinit var logScroll: android.widget.ScrollView
@@ -933,7 +935,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             }
                         }
                         // wait to ensure upload/transcode finishes before continuing
-                        delay(3000)
+                        delay(uploadDelayMs)
                         newLink = response.media?.code?.let { "https://instagram.com/p/$it" }
                     }
                     newLink?.let {
@@ -951,7 +953,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 }
                 Log.d("InstagramToolsFragment", "Waiting before next post")
                 appendLog("> waiting for next post", animate = true)
-                showWaitingDots(actionDelayMs)
+                showWaitingDots(postDelayMs)
             }
             Log.d("InstagramToolsFragment", "Repost sequence finished")
             appendLog(
