@@ -4,11 +4,11 @@ This document describes the overall business workflow implemented in the **Socia
 
 ## Overview
 
-SocialToolsApp provides utilities for automating social media activity. The application centers on Instagram interactions and incorporates integrations with Twitter and TikTok. Key features include:
+SocialToolsApp provides utilities for automating social media activity. The application centers on Instagram interactions. Key features include:
 
 - OAuth login for Instagram with an in-app WebView flow.
 - Displaying Instagram profile details and statistics.
-- Fetching and displaying recent Instagram posts via the Instagram Graph API.
+- Fetching and displaying recent Instagram posts using in-app requests.
 - Tools to like, repost, and comment on daily Instagram posts from selected accounts.
 - Background service to run automated posting tasks.
 - Optional premium subscription flow handled through remote API calls.
@@ -23,8 +23,7 @@ SocialToolsApp provides utilities for automating social media activity. The appl
 ## High Level Workflow
 
 1. **Authentication**
-   - The user logs in to Instagram through the OAuth flow (`InstaOauthLoginFragment`). The obtained access token is stored locally.
-   - The app can also perform Twitter OAuth (`TwitterAuthManager` and `TwitterCallbackActivity`) for fetching or posting tweets if needed.
+   - The user logs in to Instagram through an in-app OAuth WebView flow. The obtained access token is stored locally.
    - TikTok session data is securely saved via `TiktokSessionManager`.
 
 2. **Instagram Tools**
@@ -42,17 +41,16 @@ SocialToolsApp provides utilities for automating social media activity. The appl
    - The app checks subscription status using `checkSubscriptionStatus` (in `InstagramToolsFragment`) and adjusts UI indicators (badge icons) based on active status.
 
 5. **Dashboard and Post Viewer**
-   - `DashboardFragment` fetches recent Instagram posts using `InstagramGraphApi` and shows them in a RecyclerView with `PostAdapter`.
+   - `DashboardFragment` fetches recent Instagram posts and shows them in a RecyclerView with `PostAdapter`.
 
 ## Data Storage
 
-- EncryptedSharedPreferences are used for storing tokens (Twitter, TikTok) and session cookies.
+- EncryptedSharedPreferences are used for storing tokens (TikTok) and session cookies.
 - Local files are used for logging Instagram automation results and serialized Instagram client sessions.
 
 ## External Dependencies
 
 - **Instagram4j** – Handles low level Instagram API calls for login and posting.
-- **Twitter4j** – Handles Twitter OAuth and API interactions.
 - **OkHttp** – Used for all HTTP requests, including remote API calls.
 - **Coroutines** – Kotlin coroutines manage background operations and asynchronous tasks throughout the app.
 

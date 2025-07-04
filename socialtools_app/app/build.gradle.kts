@@ -22,12 +22,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
-        buildConfigField("String", "TWITTER_CONSUMER_KEY", "\"${envProps["TWITTER_CONSUMER_KEY"] ?: ""}\"")
-        buildConfigField("String", "TWITTER_CONSUMER_SECRET", "\"${envProps["TWITTER_CONSUMER_SECRET"] ?: ""}\"")
-        buildConfigField("String", "IG_GRAPH_TOKEN", "\"${envProps["IG_GRAPH_TOKEN"] ?: ""}\"")
-        buildConfigField("String", "IG_GRAPH_USER_ID", "\"${envProps["IG_GRAPH_USER_ID"] ?: ""}\"")
-        buildConfigField("String", "IG_APP_ID", "\"${envProps["IG_APP_ID"] ?: ""}\"")
-        buildConfigField("String", "IG_REDIRECT_URI", "\"${envProps["IG_REDIRECT_URI"] ?: ""}\"")
+        // OAuth credentials have been removed
         buildConfigField("String", "OPENAI_API_KEY", "\"${envProps["OPENAI_API_KEY"] ?: ""}\"")
     }
 
