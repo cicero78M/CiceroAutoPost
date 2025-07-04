@@ -136,7 +136,7 @@ class AiCommentCheckActivity : AppCompatActivity() {
                     }
                     return@launch
                 }
-                client.commentWithFallback(this@AiCommentCheckActivity, item.id, item.code, commentText)
+                client.commentWithFallback(item.id, item.code, commentText)
                 withContext(Dispatchers.Main) {
                     resultView.text = "Comment posted: $commentText"
                 }

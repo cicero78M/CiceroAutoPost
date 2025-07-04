@@ -1,6 +1,5 @@
 package com.cicero.socialtools.utils
 
-import android.content.Context
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.requests.media.MediaCommentRequest
 import com.cicero.socialtools.utils.InstagramWebSession
@@ -12,7 +11,6 @@ import java.io.IOException
 
 /** Helper to post Instagram comments with a fallback using web requests. */
 suspend fun IGClient.commentWithFallback(
-    context: Context,
     mediaId: String,
     shortcode: String,
     text: String
@@ -34,7 +32,7 @@ suspend fun IGClient.commentWithFallback(
     }
     if (!success) {
         withContext(Dispatchers.IO) {
-            InstagramWebSession.postComment(context, mediaId, shortcode, text)
+            InstagramWebSession.postComment(this, mediaId, shortcode, text)
         }
     }
 }
