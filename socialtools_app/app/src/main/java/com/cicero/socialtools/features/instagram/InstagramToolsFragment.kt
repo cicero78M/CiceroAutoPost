@@ -612,42 +612,49 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             ensureFollowing(client, username)
-            try {
-                val action = withContext(Dispatchers.IO) {
-                    client.actions().users().findByUsername(username).join()
-                }
-                val resp = withContext(Dispatchers.IO) {
-                    val req = FeedUserRequest(action.user.pk)
-                    client.sendRequest(req).join()
-                }
-                val candidates = resp.items.take(12)
-                var liked = false
-                for (item in candidates) {
-                    val id = item.id
-                    val code = item.code
-                    val already = try {
-                        withContext(Dispatchers.IO) {
-                            client.sendRequest(
-                                com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                            ).join()
-                        }.items.firstOrNull()?.isHas_liked == true
-                    } catch (_: Exception) { false }
-                    if (!already) {
-                        withContext(Dispatchers.IO) {
-                            client.sendRequest(
-                                MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
-                            ).join()
-                        }
-                        withContext(Dispatchers.Main) { appendLog("> liked [$code]", animate = true) }
-                        liked = true
-                        break
+            var attempt = 0
+            var success = false
+            while (attempt < 5 && !success) {
+                try {
+                    val action = withContext(Dispatchers.IO) {
+                        client.actions().users().findByUsername(username).join()
                     }
+                    val resp = withContext(Dispatchers.IO) {
+                        val req = FeedUserRequest(action.user.pk)
+                        client.sendRequest(req).join()
+                    }
+                    val candidates = resp.items.take(12)
+                    var liked = false
+                    for (item in candidates) {
+                        val id = item.id
+                        val code = item.code
+                        val already = try {
+                            withContext(Dispatchers.IO) {
+                                client.sendRequest(
+                                    com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
+                                ).join()
+                            }.items.firstOrNull()?.isHas_liked == true
+                        } catch (_: Exception) { false }
+                        if (!already) {
+                            withContext(Dispatchers.IO) {
+                                client.sendRequest(
+                                    MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                                ).join()
+                            }
+                            withContext(Dispatchers.Main) { appendLog("> liked [$code]", animate = true) }
+                            liked = true
+                            break
+                        }
+                    }
+                    if (!liked) {
+                        withContext(Dispatchers.Main) { appendLog("> all recent posts already liked", animate = true) }
+                    }
+                    success = true
+                } catch (e: Exception) {
+                    attempt++
+                    withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
+                    if (attempt < 5) delay(30000)
                 }
-                if (!liked) {
-                    withContext(Dispatchers.Main) { appendLog("> all recent posts already liked", animate = true) }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
             }
             delay(randomCommentDelayMs())
         }
@@ -659,68 +666,75 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
         for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
-            try {
-                val action = withContext(Dispatchers.IO) {
-                    client.actions().users().findByUsername(username).join()
-                }
-                val resp = withContext(Dispatchers.IO) {
-                    val req = FeedUserRequest(action.user.pk)
-                    client.sendRequest(req).join()
-                }
-                val candidates = resp.items.take(12)
-                var commented = false
-                var skippedNoText = 0
-                var failed = 0
-                for (item in candidates) {
-                    val id = item.id
-                    val code = item.code
-                    withContext(Dispatchers.Main) {
-                        appendLog("> commenting [sc=$code, id=$id]", animate = true)
+            var attempt = 0
+            var success = false
+            while (attempt < 5 && !success) {
+                try {
+                    val action = withContext(Dispatchers.IO) {
+                        client.actions().users().findByUsername(username).join()
                     }
-                    if (flareCommentedIds.contains(code)) {
-                        withContext(Dispatchers.Main) { appendLog("> skip [$code] - already commented") }
-                        continue
+                    val resp = withContext(Dispatchers.IO) {
+                        val req = FeedUserRequest(action.user.pk)
+                        client.sendRequest(req).join()
                     }
-                    val captionText = item.caption?.text ?: ""
-                    Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
-                    // Generate a friendly and supportive comment for the post caption
-                    // using OpenAI with a 15-word limit
-                    val aiComment = withContext(Dispatchers.IO) { fetchAiComment(captionText) }
-                    if (aiComment == null) {
-                        withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
-                        Log.d("InstagramToolsFragment", "AI comment generation returned null")
-                    }
-                    val text = aiComment ?: ""
-                    if (text.isBlank()) {
-                        skippedNoText++
-                        withContext(Dispatchers.Main) { appendLog("> skip [$code] - no comment text") }
-                        continue
-                    }
-                    try {
-                        withContext(Dispatchers.IO) {
-                            client.commentWithFallback(id, text)
-                        }
+                    val candidates = resp.items.take(12)
+                    var commented = false
+                    var skippedNoText = 0
+                    var failed = 0
+                    for (item in candidates) {
+                        val id = item.id
+                        val code = item.code
                         withContext(Dispatchers.Main) {
-                            appendLog("> commented [sc=$code, id=$id]", animate = true)
+                            appendLog("> commenting [sc=$code, id=$id]", animate = true)
                         }
-                        flareCommentedIds.add(code)
-                        val prefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
-                        prefs.edit().putStringSet("ids", flareCommentedIds).apply()
-                        commented = true
-                        break
-                    } catch (e: Exception) {
-                        failed++
-                        withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${e.message}") }
+                        if (flareCommentedIds.contains(code)) {
+                            withContext(Dispatchers.Main) { appendLog("> skip [$code] - already commented") }
+                            continue
+                        }
+                        val captionText = item.caption?.text ?: ""
+                        Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
+                        // Generate a friendly and supportive comment for the post caption
+                        // using OpenAI with a 15-word limit
+                        val aiComment = withContext(Dispatchers.IO) { fetchAiComment(captionText) }
+                        if (aiComment == null) {
+                            withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
+                            Log.d("InstagramToolsFragment", "AI comment generation returned null")
+                        }
+                        val text = aiComment ?: ""
+                        if (text.isBlank()) {
+                            skippedNoText++
+                            withContext(Dispatchers.Main) { appendLog("> skip [$code] - no comment text") }
+                            continue
+                        }
+                        try {
+                            withContext(Dispatchers.IO) {
+                                client.commentWithFallback(id, text)
+                            }
+                            withContext(Dispatchers.Main) {
+                                appendLog("> commented [sc=$code, id=$id]", animate = true)
+                            }
+                            flareCommentedIds.add(code)
+                            val prefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
+                            prefs.edit().putStringSet("ids", flareCommentedIds).apply()
+                            commented = true
+                            break
+                        } catch (e: Exception) {
+                            failed++
+                            withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${e.message}") }
+                        }
                     }
-                }
-                if (!commented) {
-                    val info = "skipped $skippedNoText, failed $failed"
-                    withContext(Dispatchers.Main) {
-                        appendLog("> all recent posts already commented or no text ($info)", animate = true)
+                    if (!commented) {
+                        val info = "skipped $skippedNoText, failed $failed"
+                        withContext(Dispatchers.Main) {
+                            appendLog("> all recent posts already commented or no text ($info)", animate = true)
+                        }
                     }
+                    success = true
+                } catch (e: Exception) {
+                    attempt++
+                    withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
+                    if (attempt < 5) delay(30000)
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
             }
             delay(randomCommentDelayMs())
         }
