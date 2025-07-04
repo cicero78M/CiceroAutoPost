@@ -91,6 +91,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private val repostedIds = mutableSetOf<String>()
     private val likedIds = mutableSetOf<String>()
     private val commentedIds = mutableSetOf<String>()
+    private val flareCommentedIds = mutableSetOf<String>()
     private val clientFile: File by lazy { File(requireContext().filesDir, "igclient.ser") }
     private val cookieFile: File by lazy { File(requireContext().filesDir, "igcookie.ser") }
     private var currentUsername: String? = null
@@ -199,6 +200,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         likedIds.addAll(likePrefs.getStringSet("ids", emptySet()) ?: emptySet())
         val commentPrefs = requireContext().getSharedPreferences("commented", Context.MODE_PRIVATE)
         commentedIds.addAll(commentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
+        val flareCommentPrefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
+        flareCommentedIds.addAll(flareCommentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
         fetchTargetAccount()
 
         startButton.setOnClickListener {
@@ -625,6 +628,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 for (item in candidates) {
                     val id = item.id
                     val code = item.code
+                    if (flareCommentedIds.contains(code)) {
+                        withContext(Dispatchers.Main) { appendLog("> skip [$code] - already commented") }
+                        continue
+                    }
                     val captionText = item.caption?.text ?: ""
                     Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
                     // Generate a friendly and supportive comment for the post caption
@@ -647,6 +654,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             ).join()
                         }
                         withContext(Dispatchers.Main) { appendLog("> commented [$code]", animate = true) }
+                        flareCommentedIds.add(code)
+                        val prefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
+                        prefs.edit().putStringSet("ids", flareCommentedIds).apply()
                         commented = true
                         break
                     } catch (e: Exception) {
