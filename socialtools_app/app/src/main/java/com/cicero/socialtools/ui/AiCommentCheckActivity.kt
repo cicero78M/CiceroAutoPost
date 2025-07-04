@@ -1,6 +1,7 @@
 package com.cicero.socialtools.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -61,8 +62,10 @@ class AiCommentCheckActivity : AppCompatActivity() {
             client.newCall(req).execute().use { resp ->
                 val bodyStr = resp.body?.string()
                 if (!resp.isSuccessful) {
-                    return "Error ${resp.code}: ${bodyStr?.take(200)}"
+                    Log.d("AiCommentCheck", "Error ${'$'}{resp.code} response: ${'$'}{bodyStr}")
+                    return "Error ${'$'}{resp.code}: ${'$'}{bodyStr?.take(200)}"
                 }
+                Log.d("AiCommentCheck", "Raw response: ${'$'}bodyStr")
                 val obj = JSONObject(bodyStr ?: "{}")
                 val text = obj.getJSONArray("choices")
                     .optJSONObject(0)
