@@ -3,6 +3,7 @@ package com.cicero.socialtools.features.instagram
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -20,7 +21,6 @@ import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.MainActivity
 import com.cicero.socialtools.utils.OpenAiUtils
-import com.cicero.socialtools.utils.commentWithFallback
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
@@ -711,9 +711,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             continue
                         }
                         try {
-                            withContext(Dispatchers.IO) {
-                                client.commentWithFallback(id, code, text)
-                            }
+                            commentPostNative(code, text)
                             withContext(Dispatchers.Main) {
                                 appendLog("> commented [sc=$code, id=$id]", animate = true)
                             }
@@ -932,9 +930,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         continue
                     }
                     try {
-                        withContext(Dispatchers.IO) {
-                            client.commentWithFallback(id, code, text)
-                        }
+                        commentPostNative(code, text)
                         appendLog(
                             "> commented on [sc=$code, id=$id]",
                             animate = true
@@ -1214,6 +1210,29 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             Log.e("InstagramToolsFragment", "OpenAI call error", e)
             null
         }
+    }
+
+    /**
+     * Opens the Instagram post for the given shortcode and injects the provided
+     * comment text using the accessibility service.
+     */
+    private suspend fun commentPostNative(shortcode: String, text: String) {
+        val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
+        withContext(Dispatchers.Main) {
+            startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
+                setPackage("com.instagram.android")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        }
+        delay(3000)
+        val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
+            putExtra(MainActivity.EXTRA_COMMENT, text)
+        }
+        requireContext().sendBroadcast(intent)
+        delay(2000)
+        val pm = requireContext().packageManager
+        val back = pm.getLaunchIntentForPackage(requireContext().packageName)
+        back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
     }
 
 
