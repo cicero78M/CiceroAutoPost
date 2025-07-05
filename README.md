@@ -17,11 +17,12 @@ uploading a new post, the app compares its caption against the last twelve
 uploads from the logged-in account. If a matching caption is found, the post is
 skipped to avoid re-uploading identical content.
 
-### Web Session Commenting
+### Native Commenting
 
-Comments are still sent through the Instagram web endpoint, but the app now
-uses cookies from the logged-in Instagram4j session. The previous web login
-helper has been removed to avoid triggering account warnings.
+Comments are now posted using an `AccessibilityService` that opens the
+Instagram app and injects the generated text into the comment field. This
+pendekatan menggantikan metode `instagram4j` sehingga tidak perlu lagi
+memanggil endpoint web secara langsung.
 
 ## Configuration
 

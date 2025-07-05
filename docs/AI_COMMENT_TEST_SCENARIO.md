@@ -1,10 +1,9 @@
 # Check AI Comment
 
-Dokumen ini diganti untuk menampilkan contoh aplikasi Android sederhana yang
-memanfaatkan `AccessibilityService` guna mengisi kolom komentar pada aplikasi
-Instagram secara otomatis. Komentar diinput melalui `EditText` di `MainActivity`
-kemudian dikirim ke service agar dituliskan ke postingan yang sedang dibuka dan
-menekan tombol "Post".
+Dokumen ini menampilkan contoh pemanfaatan `AccessibilityService` untuk
+mengisi kolom komentar Instagram secara otomatis. Teks komentar dikirim lewat
+`Broadcast` tanpa kolom input sehingga service akan menuliskannya ke postingan
+yang sedang dibuka kemudian menekan tombol "Post".
 
 ## Kode Kotlin
 ```kotlin
@@ -14,37 +13,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val commentInput = findViewById<EditText>(R.id.input_comment)
-        findViewById<Button>(R.id.button_send_comment).setOnClickListener {
-            val intent = Intent(ACTION_INPUT_COMMENT).apply {
-                putExtra(EXTRA_COMMENT, commentInput.text.toString())
-            }
-            sendBroadcast(intent)
+        // Kirim komentar otomatis tanpa UI input
+        val intent = Intent(ACTION_INPUT_COMMENT).apply {
+            putExtra(EXTRA_COMMENT, "Komentar otomatis")
         }
+        sendBroadcast(intent)
     }
 }
 ```
 
 ```xml
-<!-- res/layout/activity_main.xml -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
-    <EditText
-        android:id="@+id/input_comment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Tulis komentar"/>
-
-    <Button
-        android:id="@+id/button_send_comment"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Kirim"/>
-</LinearLayout>
+Tidak ada lagi kolom input komentar pada layout.
 ```
 
 ```kotlin
@@ -110,6 +89,6 @@ Tambahkan entri berikut di `AndroidManifest.xml`:
     android:description="@string/service_description"/>
 ```
 
-Dengan konfigurasi di atas, ketika tombol pada `MainActivity` diklik, komentar
-yang diinput akan diisi pada kolom komentar postingan Instagram yang sedang
-terbuka lalu tombol "Post" ditekan secara otomatis.
+Dengan konfigurasi di atas, ketika broadcast berisi komentar dikirim,
+`InstagramCommentService` akan mengisi kolom komentar pada postingan yang
+sedang terbuka dan menekan tombol "Post" secara otomatis.
