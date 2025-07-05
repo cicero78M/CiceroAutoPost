@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.cicero.socialtools.ui.MainActivity
-import java.util.ArrayDeque
 
 /** Accessibility service that fills the comment field in Instagram and presses Post. */
 class InstagramCommentService : AccessibilityService() {
@@ -42,27 +41,20 @@ class InstagramCommentService : AccessibilityService() {
     private fun fillComment() {
         val text = currentComment ?: return
         var root = rootInActiveWindow ?: return
-        val packageName = root.packageName?.toString()
-        var input: AccessibilityNodeInfo? = null
-        if (packageName == "com.instagram.android") {
+        var input = root.findAccessibilityNodeInfosByViewId(
+            "com.instagram.android:id/layout_comment_thread_edittext"
+        ).firstOrNull()
+
+        if (input == null) {
+            // Try opening the comment composer first
+            root.findAccessibilityNodeInfosByText("Comment")
+                .firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            // Allow the UI to update
+            Thread.sleep(500)
+            root = rootInActiveWindow ?: return
             input = root.findAccessibilityNodeInfosByViewId(
                 "com.instagram.android:id/layout_comment_thread_edittext"
             ).firstOrNull()
-
-            if (input == null) {
-                // Try opening the comment composer first
-                root.findAccessibilityNodeInfosByText("Comment")
-                    .firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                // Allow the UI to update
-                Thread.sleep(500)
-                root = rootInActiveWindow ?: return
-                input = root.findAccessibilityNodeInfosByViewId(
-                    "com.instagram.android:id/layout_comment_thread_edittext"
-                ).firstOrNull()
-            }
-        } else {
-            // Running inside Chrome. Try to locate the comment box by heuristics.
-            input = findChromeInput(root)
         }
 
         if (input == null) return
@@ -75,42 +67,8 @@ class InstagramCommentService : AccessibilityService() {
         }
         input.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
         input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-        findNodeByText(root, "Post")?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        root.findAccessibilityNodeInfosByText("Post")
+            .firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         currentComment = null
-    }
-
-    private fun findChromeInput(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
-        val queue: ArrayDeque<AccessibilityNodeInfo> = ArrayDeque()
-        queue.add(root)
-        while (queue.isNotEmpty()) {
-            val node = queue.removeFirst()
-            val className = node.className?.toString()
-            val text = node.text?.toString() ?: ""
-            val desc = node.contentDescription?.toString() ?: ""
-            if (className == "android.widget.EditText" &&
-                (text.contains("comment", true) || desc.contains("comment", true))) {
-                return node
-            }
-            for (i in 0 until node.childCount) {
-                node.getChild(i)?.let { queue.add(it) }
-            }
-        }
-        return null
-    }
-
-    private fun findNodeByText(root: AccessibilityNodeInfo, target: String): AccessibilityNodeInfo? {
-        val queue: ArrayDeque<AccessibilityNodeInfo> = ArrayDeque()
-        queue.add(root)
-        while (queue.isNotEmpty()) {
-            val node = queue.removeFirst()
-            val text = node.text?.toString() ?: ""
-            if (text.equals(target, true)) {
-                return node
-            }
-            for (i in 0 until node.childCount) {
-                node.getChild(i)?.let { queue.add(it) }
-            }
-        }
-        return null
     }
 }
