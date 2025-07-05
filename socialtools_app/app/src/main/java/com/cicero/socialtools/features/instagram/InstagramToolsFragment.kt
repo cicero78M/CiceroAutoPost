@@ -174,7 +174,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     media.user?.username?.let { if (it != targetUsername) flareTargets.add(it) }
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) { appendLog("Error tag #$tag: ${e.message}") }
+                val msg = if (e.message?.contains("Unexpected character") == true) {
+                    "invalid response - check login"
+                } else e.message
+                withContext(Dispatchers.Main) { appendLog("Error tag #$tag: ${msg ?: "unknown"}") }
             }
         }
         withContext(Dispatchers.Main) { appendLog("> collected ${flareTargets.size} flare users", animate = true) }
