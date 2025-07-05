@@ -56,8 +56,7 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
     implementation("com.github.bumptech.glide:glide:4.16.0")
-    implementation project(":instagram4j")
-
+    implementation(project(":instagram4j"))
 
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")

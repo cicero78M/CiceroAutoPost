@@ -13,6 +13,7 @@
           <set>
             <option value="$PROJECT_DIR$/socialtools_app" />
             <option value="$PROJECT_DIR$/socialtools_app/app" />
+            <option value="$PROJECT_DIR$/socialtools_app/external/instagram4j" />
           </set>
         </option>
       </GradleProjectSettings>
