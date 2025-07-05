@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.util.Log
+import com.cicero.socialtools.BuildConfig
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.cicero.socialtools.ui.MainActivity
@@ -13,6 +15,33 @@ import com.cicero.socialtools.ui.MainActivity
 /** Accessibility service that fills the comment field in Instagram and presses Post. */
 class InstagramCommentService : AccessibilityService() {
     private var currentComment: String? = null
+
+    companion object {
+        private const val TAG = "InstagramCommentService"
+    }
+
+    private fun logTree(node: AccessibilityNodeInfo?, indent: String = "") {
+        if (!BuildConfig.DEBUG) return
+        if (node == null) {
+            Log.d(TAG, indent + "null")
+            return
+        }
+        val info = "class=${node.className} text=${node.text} id=${node.viewIdResourceName}"
+        Log.d(TAG, indent + info)
+        for (i in 0 until node.childCount) {
+            logTree(node.getChild(i), indent + "  ")
+        }
+    }
+
+    private fun findFirstEditText(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (node == null) return null
+        if (node.className?.toString()?.contains("EditText") == true) return node
+        for (i in 0 until node.childCount) {
+            val found = findFirstEditText(node.getChild(i))
+            if (found != null) return found
+        }
+        return null
+    }
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -40,35 +69,42 @@ class InstagramCommentService : AccessibilityService() {
 
     private fun fillComment() {
         val text = currentComment ?: return
-        var root = rootInActiveWindow ?: return
-        var input = root.findAccessibilityNodeInfosByViewId(
-            "com.instagram.android:id/layout_comment_thread_edittext"
-        ).firstOrNull()
-
-        if (input == null) {
-            // Try opening the comment composer first
-            root.findAccessibilityNodeInfosByText("Comment")
-                .firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            // Allow the UI to update
-            Thread.sleep(500)
-            root = rootInActiveWindow ?: return
-            input = root.findAccessibilityNodeInfosByViewId(
-                "com.instagram.android:id/layout_comment_thread_edittext"
-            ).firstOrNull()
-        }
-
-        if (input == null) return
-
-        val args = Bundle().apply {
-            putCharSequence(
-                AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
-                text
-            )
-        }
-        input.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
-        input.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-        root.findAccessibilityNodeInfosByText("Post")
-            .firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         currentComment = null
+
+        Thread {
+            // wait to ensure post is fully opened
+            Thread.sleep(2500)
+            var root = rootInActiveWindow
+            if (BuildConfig.DEBUG) logTree(root)
+            if (root == null) return@Thread
+
+            // detect and open comment composer
+            root.findAccessibilityNodeInfosByText("Comment")
+                .firstOrNull()?.let {
+                    it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    Thread.sleep(500)
+                    root = rootInActiveWindow
+                    if (BuildConfig.DEBUG) logTree(root)
+                }
+
+            var input = findFirstEditText(root)
+            if (input == null) {
+                Thread.sleep(500)
+                root = rootInActiveWindow
+                if (BuildConfig.DEBUG) logTree(root)
+                input = findFirstEditText(root)
+            }
+
+            val args = Bundle().apply {
+                putCharSequence(
+                    AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
+                    text
+                )
+            }
+            input?.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+            input?.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+            root?.findAccessibilityNodeInfosByText("Post")
+                ?.firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        }.start()
     }
 }
