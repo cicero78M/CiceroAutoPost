@@ -1220,35 +1220,21 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
         val context = requireContext()
         val pm = context.packageManager
-        val appIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-            setPackage("com.instagram.android")
+        val chromeIntent = Intent(Intent.ACTION_VIEW, uri).apply {
+            setPackage("com.android.chrome")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        val canUseApp = appIntent.resolveActivity(pm) != null
         withContext(Dispatchers.Main) {
-            if (canUseApp) {
-                startActivity(appIntent)
-            } else {
-                startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-                Toast.makeText(
-                    context,
-                    "Instagram app not found, opening in browser",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            startActivity(chromeIntent)
         }
-        if (canUseApp) {
-            delay(3000)
-            val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
-                putExtra(MainActivity.EXTRA_COMMENT, text)
-            }
-            context.sendBroadcast(intent)
-            delay(2000)
-            val back = pm.getLaunchIntentForPackage(context.packageName)
-            back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
+        delay(3000)
+        val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
+            putExtra(MainActivity.EXTRA_COMMENT, text)
         }
+        context.sendBroadcast(intent)
+        delay(2000)
+        val back = pm.getLaunchIntentForPackage(context.packageName)
+        back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
     }
 
 
