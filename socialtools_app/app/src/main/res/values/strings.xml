@@ -33,6 +33,7 @@
     <string name="error_generating_comment">Failed to generate comment</string>
     <string name="check_ai_comment">Check AI Comment</string>
     <string name="comment_last_post">Comment Latest Post</string>
+    <string name="send_comment">Kirim komentar</string>
     <string name="process_time_placeholder">Process time: -</string>
     <string name="process_time_result">Process time: %1$d s</string>
     <string name="service_description">Instagram auto comment service</string>

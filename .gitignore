@@ -1,2 +1,5 @@
 # Ignore environment variables file
 .env
+socialtools_app/.gradle/
+socialtools_app/build/
+socialtools_app/app/build/
