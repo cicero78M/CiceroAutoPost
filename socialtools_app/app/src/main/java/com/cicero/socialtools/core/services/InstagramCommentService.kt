@@ -28,6 +28,13 @@ class InstagramCommentService : AccessibilityService() {
         Log.d(TAG, message)
     }
 
+    private fun sendResult(success: Boolean) {
+        val intent = Intent(MainActivity.ACTION_COMMENT_RESULT).apply {
+            putExtra(MainActivity.EXTRA_COMMENT_SUCCESS, success)
+        }
+        sendBroadcast(intent)
+    }
+
     private fun logTree(node: AccessibilityNodeInfo?, indent: String = "") {
         if (!BuildConfig.DEBUG) return
         if (node == null) {
@@ -90,6 +97,7 @@ class InstagramCommentService : AccessibilityService() {
             if (BuildConfig.DEBUG) logTree(root)
             if (root == null) {
                 sendLog("Root window is null")
+                sendResult(false)
                 return@Thread
             }
 
@@ -111,6 +119,11 @@ class InstagramCommentService : AccessibilityService() {
                 if (BuildConfig.DEBUG) logTree(root)
                 input = findFirstEditText(root)
             }
+            if (input == null) {
+                sendLog("Comment input not found")
+                sendResult(false)
+                return@Thread
+            }
 
             val args = Bundle().apply {
                 putCharSequence(
@@ -127,6 +140,7 @@ class InstagramCommentService : AccessibilityService() {
                     it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 }
             sendLog("Comment workflow complete")
+            sendResult(true)
         }.start()
     }
 }

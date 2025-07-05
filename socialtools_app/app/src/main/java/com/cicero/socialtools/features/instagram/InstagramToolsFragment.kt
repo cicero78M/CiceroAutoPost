@@ -45,6 +45,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -686,7 +687,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private suspend fun commentFlareAccounts(client: IGClient, count: Int) {
+    private suspend fun commentFlareAccounts(client: IGClient, count: Int): Boolean {
         withContext(Dispatchers.Main) {
             appendLog(">>> Commenting flare accounts", animate = true)
         }
@@ -733,7 +734,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             continue
                         }
                         try {
-                            commentPostNative(code, text)
+                            val ok = commentPostNative(code, text)
+                            if (!ok) {
+                                withContext(Dispatchers.Main) { appendLog("> failed commenting [$code]") }
+                                return false
+                            }
                             withContext(Dispatchers.Main) {
                                 appendLog("> commented [sc=$code, id=$id]", animate = true)
                             }
@@ -762,6 +767,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             }
             delay(randomCommentDelayMs())
         }
+        return true
     }
 
 
@@ -941,7 +947,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     val code = post.code
                     val id = post.id
                     appendLog("> commenting [sc=$code, id=$id]", animate = true)
-                    commentFlareAccounts(client, 5)
+                    val proceed = commentFlareAccounts(client, 5)
+                    if (!proceed) break
                     val text = withContext(Dispatchers.IO) {
                         fetchAiComment(post.caption ?: "")
                     } ?: ""
@@ -952,7 +959,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         continue
                     }
                     try {
-                        commentPostNative(code, text)
+                        val ok = commentPostNative(code, text)
+                        if (!ok) {
+                            appendLog("> failed commenting [$code]")
+                            break
+                        }
                         appendLog(
                             "> commented on [sc=$code, id=$id]",
                             animate = true
@@ -1238,7 +1249,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
      * Opens the Instagram post for the given shortcode and injects the provided
      * comment text using the accessibility service.
      */
-    private suspend fun commentPostNative(shortcode: String, text: String) {
+    private suspend fun commentPostNative(shortcode: String, text: String): Boolean {
         val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
         val context = requireContext()
         val pm = context.packageManager
@@ -1261,16 +1272,41 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 ).show()
             }
         }
-        if (canUseApp) {
-            delay(3000)
-            val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
-                putExtra(MainActivity.EXTRA_COMMENT, text)
+        if (!canUseApp) return false
+
+        delay(3000)
+
+        val result = withTimeoutOrNull(15000) {
+            suspendCancellableCoroutine<Boolean> { cont ->
+                val receiver = object : android.content.BroadcastReceiver() {
+                    override fun onReceive(ctx: Context?, intent: Intent?) {
+                        if (intent?.action == MainActivity.ACTION_COMMENT_RESULT) {
+                            ctx?.unregisterReceiver(this)
+                            val success = intent.getBooleanExtra(
+                                MainActivity.EXTRA_COMMENT_SUCCESS,
+                                false
+                            )
+                            if (cont.isActive) cont.resume(success) {}
+                        }
+                    }
+                }
+                context.registerReceiver(
+                    receiver,
+                    android.content.IntentFilter(MainActivity.ACTION_COMMENT_RESULT)
+                )
+                val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
+                    putExtra(MainActivity.EXTRA_COMMENT, text)
+                }
+                context.sendBroadcast(intent)
+                cont.invokeOnCancellation { context.unregisterReceiver(receiver) }
             }
-            context.sendBroadcast(intent)
-            delay(2000)
-            val back = pm.getLaunchIntentForPackage(context.packageName)
-            back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
-        }
+        } ?: false
+
+        delay(2000)
+        val back = pm.getLaunchIntentForPackage(context.packageName)
+        back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
+
+        return result
     }
 
 
