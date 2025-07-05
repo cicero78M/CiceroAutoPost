@@ -35,7 +35,6 @@ import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutReques
 import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
 import com.github.instagram4j.instagram4j.requests.friendships.FriendshipsActionRequest
-import com.github.instagram4j.instagram4j.requests.feed.FeedTagRequest
 import com.github.instagram4j.instagram4j.responses.media.MediaResponse
 import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
 import com.github.instagram4j.instagram4j.utils.IGUtils
@@ -96,7 +95,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var processTimeView: TextView
     // Removed Twitter and TikTok UI elements
     private lateinit var targetLinkInput: EditText
-    private lateinit var hashtagsInput: EditText
     private val repostedIds = mutableSetOf<String>()
     private val likedIds = mutableSetOf<String>()
     private val commentedIds = mutableSetOf<String>()
@@ -118,20 +116,22 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             }
         }
     }
-    private val flareTargets = mutableSetOf<String>()
-    private val sessionLikedUsers = mutableSetOf<String>()
-    private val usedDelayValues = mutableSetOf<Long>()
-    private var flareHashtags: List<String> = emptyList()
+    private val flareTargets = listOf(
+        "respaskot",
+        "humas.polresblitar",
+        "polres_ponorogo",
+        "polreskediriofficial",
+        "ditlantaspoldajatim",
+        "humaspoldajatim",
+        "ditlantas_poldariau",
+        "ditlantaspoldajateng",
+        "divhumaspolri",
+        "divpropampolri",
+        "divtikpolri"
+    )
 
-    private fun uniqueLikeDelayMs(): Long {
-        if (usedDelayValues.size >= 90) usedDelayValues.clear()
-        var value: Long
-        do {
-            value = Random.nextLong(30_000L, 120_000L)
-        } while (!usedDelayValues.add(value))
-        return value
-    }
-    private fun randomCommentDelayMs(): Long = Random.nextLong(30_000L, 120_000L)
+    private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
+    private fun randomCommentDelayMs(): Long = Random.nextLong(30000L, 120000L)
 
     private fun createHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
@@ -142,7 +142,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             .build()
 
     private suspend fun scrollRandomFlareFeed(client: IGClient) {
-        if (flareTargets.isEmpty()) return
         val username = flareTargets.random()
         withContext(Dispatchers.Main) { appendLog("> scrolling @$username", animate = true) }
         try {
@@ -160,24 +159,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         } catch (e: Exception) {
             withContext(Dispatchers.Main) { appendLog("Error scroll @$username: ${e.message}") }
         }
-    }
-
-    private suspend fun collectFlareTargets(client: IGClient) {
-        flareTargets.clear()
-        for (tag in flareHashtags) {
-            withContext(Dispatchers.Main) { appendLog("> collecting #$tag", animate = true) }
-            try {
-                val resp = withContext(Dispatchers.IO) {
-                    client.sendRequest(FeedTagRequest(tag)).join()
-                }
-                resp.items.forEach { media ->
-                    media.user?.username?.let { if (it != targetUsername) flareTargets.add(it) }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) { appendLog("Error tag #$tag: ${e.message}") }
-            }
-        }
-        withContext(Dispatchers.Main) { appendLog("> collected ${flareTargets.size} flare users", animate = true) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -219,7 +200,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
         // Removed Twitter and TikTok containers
         targetLinkInput = view.findViewById(R.id.input_target_link)
-        hashtagsInput = view.findViewById(R.id.input_hashtags)
 
         delaySeekBar = view.findViewById(R.id.seekbar_delay)
         delayText = view.findViewById(R.id.text_delay_value)
@@ -271,11 +251,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 return@setOnClickListener
             }
             targetUsername = parseUsername(target)
-
-            flareHashtags = hashtagsInput.text.toString()
-                .split(',', ' ', '#')
-                .map { it.trim() }
-                .filter { it.isNotBlank() }
 
             startTimeMs = System.currentTimeMillis()
             processTimeView.text = getString(R.string.loading)
@@ -657,47 +632,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
     }
 
-    private suspend fun likeTargetPost(client: IGClient, post: PostInfo) {
-        val id = post.id
-        val code = post.code
-        appendLog("> checking like status for $code", animate = true)
-        val alreadyLiked = try {
-            withContext(Dispatchers.IO) {
-                client.sendRequest(
-                    com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                ).join()
-            }.items.firstOrNull()?.isHas_liked == true
-        } catch (_: Exception) { false }
-        val statusText = if (alreadyLiked) "already liked" else "not yet liked"
-        appendLog("> status: $statusText", animate = true)
-        if (!alreadyLiked) {
-            try {
-                withContext(Dispatchers.IO) {
-                    client.sendRequest(
-                        MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
-                    ).join()
-                }
-                appendLog("> liked post [$code]", animate = true)
-                likedIds.add(code)
-                sessionLikedUsers.add(targetUsername)
-                val prefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
-                prefs.edit().putStringSet("ids", likedIds).apply()
-            } catch (e: Exception) {
-                appendLog("Error liking: ${e.message}")
-            }
-        }
-        delay(uniqueLikeDelayMs())
-    }
-
     private suspend fun likeFlareAccounts(client: IGClient, count: Int) {
         withContext(Dispatchers.Main) {
             appendLog(">>> Liking flare accounts", animate = true)
         }
-        val available = flareTargets.toMutableList().shuffled()
-        var done = 0
-        for (username in available) {
-            if (sessionLikedUsers.contains(username)) continue
-            if (done >= count) break
+        for (username in flareTargets.shuffled().take(count)) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             ensureFollowing(client, username)
             var attempt = 0
@@ -731,8 +670,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             }
                             withContext(Dispatchers.Main) { appendLog("> liked [$code]", animate = true) }
                             liked = true
-                            sessionLikedUsers.add(username)
-                            done++
                             break
                         }
                     }
@@ -746,8 +683,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     if (attempt < 5) delay(30000)
                 }
             }
-            delay(uniqueLikeDelayMs())
-            if (done >= count) break
+            delay(randomCommentDelayMs())
         }
     }
 
@@ -951,18 +887,44 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     ">>> Executing like routine",
                     animate = true
                 )
-                collectFlareTargets(client)
-                sessionLikedUsers.clear()
                 var liked = 0
-                val targetPost = posts.firstOrNull { !likedIds.contains(it.code) }
-                targetPost?.let {
-                    appendLog("> processing target post [${it.code}]", animate = true)
-                    likeTargetPost(client, it)
-                    liked++
+                for (post in posts.filter { !likedIds.contains(it.code) }) {
+                    appendLog("> processing target post [${post.code}]", animate = true)
+                    likeFlareAccounts(client, 5)
+                    val id = post.id
+                    val code = post.code
+                    appendLog("> checking like status for $code", animate = true)
+                    val alreadyLiked = try {
+                        withContext(Dispatchers.IO) {
+                            client.sendRequest(
+                                com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
+                            ).join()
+                        }.items.firstOrNull()?.isHas_liked == true
+                    } catch (_: Exception) { false }
+                    val statusText = if (alreadyLiked) "already liked" else "not yet liked"
+                    appendLog("> status: $statusText", animate = true)
+                    if (!alreadyLiked) {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                client.sendRequest(
+                                    MediaActionRequest(id, MediaActionRequest.MediaAction.LIKE)
+                                ).join()
+                            }
+                            appendLog("> liked post [$code]", animate = true)
+                            liked++
+                            likedIds.add(code)
+                            val prefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
+                            prefs.edit().putStringSet("ids", likedIds).apply()
+                        } catch (e: Exception) {
+                            appendLog("Error liking: ${e.message}")
+                        }
+                    }
+                    delay(randomDelayMs())
+                    scrollRandomFlareFeed(client)
+                    delay(randomDelayMs())
                 }
-                likeFlareAccounts(client, 3)
                 appendLog(
-                    ">>> Like routine finished. $liked target like, ${sessionLikedUsers.size - 1} flare likes.",
+                    ">>> Like routine finished. $liked posts liked.",
                     animate = true
                 )
             }
