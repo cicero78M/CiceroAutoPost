@@ -19,7 +19,6 @@ import com.bumptech.glide.Glide
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.utils.OpenAiUtils
-import com.cicero.socialtools.utils.InstagramWebSession
 import com.cicero.socialtools.utils.commentWithFallback
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
