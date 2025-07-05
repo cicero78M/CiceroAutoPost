@@ -199,21 +199,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         likeCheckbox = view.findViewById(R.id.checkbox_like)
         repostCheckbox = view.findViewById(R.id.checkbox_repost)
         commentCheckbox = view.findViewById(R.id.checkbox_comment)
-        val commentInput = view.findViewById<EditText>(R.id.input_comment)
-        val commentButton = view.findViewById<Button>(R.id.button_send_comment)
         badgeView = profileView.findViewById(R.id.image_badge)
         logContainer = view.findViewById(R.id.log_container)
         logScroll = view.findViewById(R.id.log_scroll)
         clearLogsButton = view.findViewById(R.id.button_clear_logs)
         processTimeView = view.findViewById(R.id.text_process_time)
 
-        commentButton.setOnClickListener {
-            val text = commentInput.text.toString()
-            val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
-                putExtra(MainActivity.EXTRA_COMMENT, text)
-            }
-            requireContext().sendBroadcast(intent)
-        }
 
         clearLogsButton.setOnClickListener { clearLogs() }
 

@@ -2,10 +2,7 @@ package com.cicero.socialtools.ui
 
 import android.os.Bundle
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
-import android.widget.Button
-import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import com.cicero.socialtools.R
 import com.cicero.socialtools.features.instagram.InstagramToolsFragment
@@ -28,14 +25,6 @@ class MainActivity : AppCompatActivity() {
                 .commit()
         }
 
-        val input = findViewById<EditText>(R.id.input_comment)
-        val button = findViewById<Button>(R.id.button_send_comment)
-        button.setOnClickListener {
-            val intent = Intent(ACTION_INPUT_COMMENT).apply {
-                putExtra(EXTRA_COMMENT, input.text.toString())
-            }
-            sendBroadcast(intent)
-        }
     }
 
     private fun startPostService() {
