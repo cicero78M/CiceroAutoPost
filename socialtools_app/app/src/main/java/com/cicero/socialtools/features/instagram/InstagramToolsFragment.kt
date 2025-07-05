@@ -76,6 +76,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var delayText: TextView
     private var actionDelayMs: Long = 30000L
     private val uploadDelayMs: Long = 10000L
+    private val videoUploadExtraDelayMs: Long = 90000L
     private val postDelayMs: Long = 120000L
     private lateinit var badgeView: ImageView
     private lateinit var logContainer: android.widget.LinearLayout
@@ -995,7 +996,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         val response = if (post.isVideo && post.videoUrl != null) {
                             val video = files.first { it.extension == "mp4" }
                             val cover = files.firstOrNull { it.extension != "mp4" } ?: video
-                            client.actions().timeline().uploadVideo(video, cover, post.caption ?: "").join()
+                            uploadVideoWithRetry(client, video, cover, post.caption ?: "")
                         } else {
                             if (files.size == 1) {
                                 client.actions().timeline().uploadPhoto(files[0], post.caption ?: "").join()
@@ -1005,7 +1006,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             }
                         }
                         // wait to ensure upload/transcode finishes before continuing
-                        delay(uploadDelayMs)
+                        val wait = uploadDelayMs + if (post.isVideo) videoUploadExtraDelayMs else 0L
+                        delay(wait)
                         newLink = response.media?.code?.let { "https://instagram.com/p/$it" }
                     }
                     appendLog("> upload success [${post.code}]", animate = true)
@@ -1127,6 +1129,35 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             appendLog("> saved to ${file.name}", animate = true)
         } catch (_: Exception) {
         }
+    }
+
+    private suspend fun uploadVideoWithRetry(
+        client: IGClient,
+        video: File,
+        cover: File,
+        caption: String,
+        maxAttempts: Int = 3
+    ): Any {
+        var attempt = 0
+        var lastError: Exception? = null
+        while (attempt < maxAttempts) {
+            try {
+                return client.actions().timeline().uploadVideo(video, cover, caption).join()
+            } catch (e: Exception) {
+                lastError = e
+                val msg = e.message ?: ""
+                if (msg.contains("transcode not finished", ignoreCase = true)) {
+                    withContext(Dispatchers.Main) {
+                        appendLog("> transcode not finished, waiting 90s", animate = true)
+                    }
+                    delay(videoUploadExtraDelayMs)
+                    attempt++
+                    continue
+                }
+                throw e
+            }
+        }
+        throw lastError ?: RuntimeException("upload failed")
     }
 
     private fun fetchAiComment(caption: String): String? {
