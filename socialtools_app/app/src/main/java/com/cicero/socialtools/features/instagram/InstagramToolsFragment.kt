@@ -106,6 +106,15 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
     private var startTimeMs: Long = 0L
+    private val accessibilityLogReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == MainActivity.ACTION_ACCESSIBILITY_LOG) {
+                intent.getStringExtra(MainActivity.EXTRA_LOG_MESSAGE)?.let { msg ->
+                    appendLog(msg)
+                }
+            }
+        }
+    }
     private val flareTargets = listOf(
         "respaskot",
         "humas.polresblitar",
@@ -154,6 +163,19 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        requireContext().registerReceiver(
+            accessibilityLogReceiver,
+            android.content.IntentFilter(MainActivity.ACTION_ACCESSIBILITY_LOG)
+        )
+    }
+
+    override fun onStop() {
+        requireContext().unregisterReceiver(accessibilityLogReceiver)
+        super.onStop()
     }
 
     @SuppressLint("SetTextI18n")

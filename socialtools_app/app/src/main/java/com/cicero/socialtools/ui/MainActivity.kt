@@ -12,6 +12,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val ACTION_INPUT_COMMENT = "com.cicero.socialtools.INPUT_COMMENT"
         const val EXTRA_COMMENT = "extra_comment"
+        const val ACTION_ACCESSIBILITY_LOG = "com.cicero.socialtools.ACCESS_LOG"
+        const val EXTRA_LOG_MESSAGE = "extra_log"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

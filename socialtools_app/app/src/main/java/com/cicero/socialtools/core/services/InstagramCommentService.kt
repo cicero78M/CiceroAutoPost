@@ -20,6 +20,14 @@ class InstagramCommentService : AccessibilityService() {
         private const val TAG = "InstagramCommentService"
     }
 
+    private fun sendLog(message: String) {
+        val intent = Intent(MainActivity.ACTION_ACCESSIBILITY_LOG).apply {
+            putExtra(MainActivity.EXTRA_LOG_MESSAGE, message)
+        }
+        sendBroadcast(intent)
+        Log.d(TAG, message)
+    }
+
     private fun logTree(node: AccessibilityNodeInfo?, indent: String = "") {
         if (!BuildConfig.DEBUG) return
         if (node == null) {
@@ -54,6 +62,7 @@ class InstagramCommentService : AccessibilityService() {
 
     override fun onServiceConnected() {
         registerReceiver(receiver, IntentFilter(MainActivity.ACTION_INPUT_COMMENT))
+        sendLog("Accessibility service connected")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -64,23 +73,30 @@ class InstagramCommentService : AccessibilityService() {
 
     override fun onDestroy() {
         unregisterReceiver(receiver)
+        sendLog("Accessibility service destroyed")
         super.onDestroy()
     }
 
     private fun fillComment() {
         val text = currentComment ?: return
+        sendLog("Received comment: ${'$'}{text.take(30)}")
         currentComment = null
 
         Thread {
+            sendLog("Starting comment workflow")
             // wait to ensure post is fully opened
             Thread.sleep(2500)
             var root = rootInActiveWindow
             if (BuildConfig.DEBUG) logTree(root)
-            if (root == null) return@Thread
+            if (root == null) {
+                sendLog("Root window is null")
+                return@Thread
+            }
 
             // detect and open comment composer
             root.findAccessibilityNodeInfosByText("Comment")
                 .firstOrNull()?.let {
+                    sendLog("Opening comment composer")
                     it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                     Thread.sleep(500)
                     root = rootInActiveWindow
@@ -89,6 +105,7 @@ class InstagramCommentService : AccessibilityService() {
 
             var input = findFirstEditText(root)
             if (input == null) {
+                sendLog("Comment input not found, retrying")
                 Thread.sleep(500)
                 root = rootInActiveWindow
                 if (BuildConfig.DEBUG) logTree(root)
@@ -103,8 +120,13 @@ class InstagramCommentService : AccessibilityService() {
             }
             input?.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
             input?.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
+            sendLog("Inserted comment text")
             root?.findAccessibilityNodeInfosByText("Post")
-                ?.firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                ?.firstOrNull()?.let {
+                    sendLog("Pressing Post button")
+                    it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                }
+            sendLog("Comment workflow complete")
         }.start()
     }
 }
