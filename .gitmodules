@@ -1,0 +1,3 @@
+[submodule "external/instagram4j"]
+	path = external/instagram4j
+	url = https://github.com/cicero78M/instagram4j.git
