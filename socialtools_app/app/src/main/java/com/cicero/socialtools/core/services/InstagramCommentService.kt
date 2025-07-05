@@ -40,10 +40,25 @@ class InstagramCommentService : AccessibilityService() {
 
     private fun fillComment() {
         val text = currentComment ?: return
-        val root = rootInActiveWindow ?: return
-        val input = root.findAccessibilityNodeInfosByViewId(
+        var root = rootInActiveWindow ?: return
+        var input = root.findAccessibilityNodeInfosByViewId(
             "com.instagram.android:id/layout_comment_thread_edittext"
-        ).firstOrNull() ?: return
+        ).firstOrNull()
+
+        if (input == null) {
+            // Try opening the comment composer first
+            root.findAccessibilityNodeInfosByText("Comment")
+                .firstOrNull()?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            // Allow the UI to update
+            Thread.sleep(500)
+            root = rootInActiveWindow ?: return
+            input = root.findAccessibilityNodeInfosByViewId(
+                "com.instagram.android:id/layout_comment_thread_edittext"
+            ).firstOrNull()
+        }
+
+        if (input == null) return
+
         val args = Bundle().apply {
             putCharSequence(
                 AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE,
