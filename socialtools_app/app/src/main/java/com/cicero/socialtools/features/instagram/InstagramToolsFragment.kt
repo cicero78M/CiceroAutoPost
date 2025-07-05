@@ -34,6 +34,7 @@ import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutReques
 import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
 import com.github.instagram4j.instagram4j.requests.friendships.FriendshipsActionRequest
+import com.github.instagram4j.instagram4j.responses.media.MediaResponse
 import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
 import com.github.instagram4j.instagram4j.utils.IGUtils
 import kotlinx.coroutines.CoroutineScope
@@ -993,18 +994,20 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     var newLink: String? = null
                     withContext(Dispatchers.IO) {
                         Log.d("InstagramToolsFragment", "Uploading ${post.code}")
-                        val response = if (post.isVideo && post.videoUrl != null) {
-                            val video = files.first { it.extension == "mp4" }
-                            val cover = files.firstOrNull { it.extension != "mp4" } ?: video
-                            uploadVideoWithRetry(client, video, cover, post.caption ?: "")
-                        } else {
-                            if (files.size == 1) {
-                                client.actions().timeline().uploadPhoto(files[0], post.caption ?: "").join()
+                        val response: MediaResponse = (
+                            if (post.isVideo && post.videoUrl != null) {
+                                val video = files.first { it.extension == "mp4" }
+                                val cover = files.firstOrNull { it.extension != "mp4" } ?: video
+                                uploadVideoWithRetry(client, video, cover, post.caption ?: "")
                             } else {
-                                val infos = files.map { TimelineAction.SidecarPhoto.from(it) }
-                                client.actions().timeline().uploadAlbum(infos, post.caption ?: "").join()
+                                if (files.size == 1) {
+                                    client.actions().timeline().uploadPhoto(files[0], post.caption ?: "").join()
+                                } else {
+                                    val infos = files.map { TimelineAction.SidecarPhoto.from(it) }
+                                    client.actions().timeline().uploadAlbum(infos, post.caption ?: "").join()
+                                }
                             }
-                        }
+                        )
                         // wait to ensure upload/transcode finishes before continuing
                         val wait = uploadDelayMs + if (post.isVideo) videoUploadExtraDelayMs else 0L
                         delay(wait)
@@ -1137,7 +1140,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         cover: File,
         caption: String,
         maxAttempts: Int = 3
-    ): Any {
+    ): MediaResponse {
         var attempt = 0
         var lastError: Exception? = null
         while (attempt < maxAttempts) {
