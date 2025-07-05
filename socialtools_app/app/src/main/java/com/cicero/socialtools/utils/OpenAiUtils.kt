@@ -21,7 +21,8 @@ object OpenAiUtils {
         val clean = sanitizeCaption(caption)
         val prompt =
             "Buat komentar Instagram yang ceria, bersahabat, dan mendukung. " +
-                "Maksimal 15 kata. Gunakan nada ringan dan tulus untuk caption berikut: " +
+                "Maksimal 15 kata. Tanpa hashtag, mention, atau emotikon. " +
+                "Gunakan nada ringan dan tulus untuk caption berikut: " +
                 clean
         val message = JSONObject().apply {
             put("role", "user")
