@@ -14,12 +14,12 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
-import com.cicero.socialtools.ui.MainActivity
+import com.cicero.socialtools.ui.LandingActivity
 import com.cicero.socialtools.ui.AiCommentCheckActivity
 import com.cicero.socialtools.utils.OpenAiUtils
 import com.cicero.socialtools.utils.AccessibilityUtils
@@ -72,7 +72,7 @@ data class PostInfo(
 )
 
 @Suppress("DEPRECATION")
-class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
+class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var loginContainer: View
     private lateinit var profileContainer: View
     private lateinit var startButton: Button
@@ -102,8 +102,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private val likedIds = mutableSetOf<String>()
     private val commentedIds = mutableSetOf<String>()
     private val flareCommentedIds = mutableSetOf<String>()
-    private val clientFile: File by lazy { File(requireContext().filesDir, "igclient.ser") }
-    private val cookieFile: File by lazy { File(requireContext().filesDir, "igcookie.ser") }
+    private val clientFile: File by lazy { File(this.filesDir, "igclient.ser") }
+    private val cookieFile: File by lazy { File(this.filesDir, "igcookie.ser") }
     private var currentUsername: String? = null
     private var token: String = ""
     private var userId: String = ""
@@ -112,14 +112,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private var startTimeMs: Long = 0L
     private val accessibilityLogReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == MainActivity.ACTION_ACCESSIBILITY_LOG) {
-                intent.getStringExtra(MainActivity.EXTRA_LOG_MESSAGE)?.let { msg ->
+            if (intent?.action == LandingActivity.ACTION_ACCESSIBILITY_LOG) {
+                intent.getStringExtra(LandingActivity.EXTRA_LOG_MESSAGE)?.let { msg ->
                     appendLog(msg)
-                    view?.let { v ->
-                        com.google.android.material.snackbar.Snackbar
-                            .make(v, msg, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
-                            .show()
-                    }
+                    val rootView = findViewById<View>(android.R.id.content)
+                    com.google.android.material.snackbar.Snackbar
+                        .make(rootView, msg, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                        .show()
                 }
             }
         }
@@ -171,30 +170,32 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setHasOptionsMenu(true)
+        setContentView(R.layout.fragment_instagram_tools)
+        startPostService()
+
+        setupViews()
     }
 
     override fun onStart() {
         super.onStart()
-        requireContext().registerReceiver(
+        this.registerReceiver(
             accessibilityLogReceiver,
-            android.content.IntentFilter(MainActivity.ACTION_ACCESSIBILITY_LOG)
+            android.content.IntentFilter(LandingActivity.ACTION_ACCESSIBILITY_LOG)
         )
     }
 
     override fun onStop() {
-        requireContext().unregisterReceiver(accessibilityLogReceiver)
+        this.unregisterReceiver(accessibilityLogReceiver)
         super.onStop()
     }
 
     @SuppressLint("SetTextI18n")
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val username = view.findViewById<EditText>(R.id.input_username)
-        val password = view.findViewById<EditText>(R.id.input_password)
-        loginContainer = view.findViewById(R.id.login_container)
-        profileContainer = view.findViewById(R.id.profile_layout)
-        val profileView = view.findViewById<View>(R.id.profile_container)
+    private fun setupViews() {
+        val username = findViewById<EditText>(R.id.input_username)
+        val password = findViewById<EditText>(R.id.input_password)
+        loginContainer = findViewById(R.id.login_container)
+        profileContainer = findViewById(R.id.profile_layout)
+        val profileView = findViewById<View>(R.id.profile_container)
         avatarView = profileView.findViewById(R.id.image_avatar)
         usernameView = profileView.findViewById(R.id.text_username)
         nameView = profileView.findViewById(R.id.text_name)
@@ -207,39 +208,39 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         profileView.findViewById<Button>(R.id.button_logout).visibility = View.GONE
 
         // Removed Twitter and TikTok containers
-        targetLinkInput = view.findViewById(R.id.input_target_link)
+        targetLinkInput = findViewById(R.id.input_target_link)
 
 
-        startButton = view.findViewById(R.id.button_start)
-        likeCheckbox = view.findViewById(R.id.checkbox_like)
-        repostCheckbox = view.findViewById(R.id.checkbox_repost)
-        commentCheckbox = view.findViewById(R.id.checkbox_comment)
+        startButton = findViewById(R.id.button_start)
+        likeCheckbox = findViewById(R.id.checkbox_like)
+        repostCheckbox = findViewById(R.id.checkbox_repost)
+        commentCheckbox = findViewById(R.id.checkbox_comment)
         badgeView = profileView.findViewById(R.id.image_badge)
-        logContainer = view.findViewById(R.id.log_container)
-        logScroll = view.findViewById(R.id.log_scroll)
-        clearLogsButton = view.findViewById(R.id.button_clear_logs)
-        processTimeView = view.findViewById(R.id.text_process_time)
+        logContainer = findViewById(R.id.log_container)
+        logScroll = findViewById(R.id.log_scroll)
+        clearLogsButton = findViewById(R.id.button_clear_logs)
+        processTimeView = findViewById(R.id.text_process_time)
 
 
         clearLogsButton.setOnClickListener { clearLogs() }
 
-        val authPrefs = requireContext().getSharedPreferences("auth", Context.MODE_PRIVATE)
+        val authPrefs = this.getSharedPreferences("auth", Context.MODE_PRIVATE)
         token = authPrefs.getString("token", "") ?: ""
         userId = authPrefs.getString("userId", "") ?: ""
-        val repostPrefs = requireContext().getSharedPreferences("reposted", Context.MODE_PRIVATE)
+        val repostPrefs = this.getSharedPreferences("reposted", Context.MODE_PRIVATE)
         repostedIds.addAll(repostPrefs.getStringSet("ids", emptySet()) ?: emptySet())
-        val likePrefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
+        val likePrefs = this.getSharedPreferences("liked", Context.MODE_PRIVATE)
         likedIds.addAll(likePrefs.getStringSet("ids", emptySet()) ?: emptySet())
-        val commentPrefs = requireContext().getSharedPreferences("commented", Context.MODE_PRIVATE)
+        val commentPrefs = this.getSharedPreferences("commented", Context.MODE_PRIVATE)
         commentedIds.addAll(commentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
-        val flareCommentPrefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
+        val flareCommentPrefs = this.getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
         flareCommentedIds.addAll(flareCommentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
         fetchTargetAccount()
 
         startButton.setOnClickListener {
             val target = targetLinkInput.text.toString().trim()
             if (target.isBlank()) {
-                Toast.makeText(requireContext(), "Link target wajib diisi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Link target wajib diisi", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             targetUsername = parseUsername(target)
@@ -253,7 +254,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             if (doLike || doRepost || doComment) {
                 fetchTodayPosts(doLike, doRepost, doComment)
             } else {
-                Toast.makeText(requireContext(), "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -262,13 +263,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         restoreSession()
 
 
-        view.findViewById<Button>(R.id.button_login_insta).setOnClickListener {
+        findViewById<Button>(R.id.button_login_insta).setOnClickListener {
             val user = username.text.toString().trim()
             val pass = password.text.toString().trim()
             if (user.isNotBlank() && pass.isNotBlank()) {
                 performLogin(user, pass)
             } else {
-                Toast.makeText(requireContext(), "Username dan password wajib diisi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Username dan password wajib diisi", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -323,13 +324,13 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 ensureRemoteData(info)
             } catch (e: IGLoginException) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Gagal login: ${e.loginResponse.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Gagal login: ${e.loginResponse.message}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Log.e("InstagramToolsFragment", "Login failed", e)
                 withContext(Dispatchers.Main) {
                     val message = e.message ?: e.toString()
-                    Toast.makeText(requireContext(), "Error: $message", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Error: $message", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -339,9 +340,9 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun promptCode(): String = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { cont ->
-            val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_two_factor, null)
-            val input = view.findViewById<EditText>(R.id.edit_code)
-            AlertDialog.Builder(requireContext())
+            val view = LayoutInflater.from(this).inflate(R.layout.dialog_two_factor, null)
+            val input = findViewById<EditText>(R.id.edit_code)
+            AlertDialog.Builder(this)
                 .setView(view)
                 .setCancelable(false)
                 .setPositiveButton("OK") { _, _ ->
@@ -487,7 +488,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     }
 
     private fun getLogFileForUser(user: String): File {
-        return File(requireContext().filesDir, "instalog_${user}.txt")
+        return File(this.filesDir, "instalog_${user}.txt")
     }
 
     private fun loadSavedLogs(user: String) {
@@ -515,8 +516,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         appendToFile: Boolean = true,
         animate: Boolean = false
     ) {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-            val tv = TextView(requireContext()).apply {
+        lifecycleScope.launch(Dispatchers.Main) {
+            val tv = TextView(this).apply {
                 typeface = android.graphics.Typeface.MONOSPACE
                 setTextColor(android.graphics.Color.parseColor("#00FF00"))
             }
@@ -736,7 +737,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                                 appendLog("> commented [sc=$code, id=$id]", animate = true)
                             }
                             flareCommentedIds.add(code)
-                            val prefs = requireContext().getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
+                            val prefs = this.getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
                             prefs.edit().putStringSet("ids", flareCommentedIds).apply()
                             commented = true
                             break
@@ -906,7 +907,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             appendLog("> liked post [$code]", animate = true)
                             liked++
                             likedIds.add(code)
-                            val prefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
+                            val prefs = this.getSharedPreferences("liked", Context.MODE_PRIVATE)
                             prefs.edit().putStringSet("ids", likedIds).apply()
                         } catch (e: Exception) {
                             appendLog("Error liking: ${e.message}")
@@ -966,7 +967,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         )
                         commented++
                         commentedIds.add(code)
-                        val prefs = requireContext().getSharedPreferences("commented", Context.MODE_PRIVATE)
+                        val prefs = this.getSharedPreferences("commented", Context.MODE_PRIVATE)
                         prefs.edit().putStringSet("ids", commentedIds).apply()
                     } catch (e: Exception) {
                         appendLog("Error commenting: ${e.message}")
@@ -1046,7 +1047,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         appendLog("> repost link: $it", animate = true)
                         withContext(Dispatchers.IO) { sendRepostLink(post.code, it) }
                         repostedIds.add(post.code)
-                        val prefs = requireContext().getSharedPreferences("reposted", Context.MODE_PRIVATE)
+                        val prefs = this.getSharedPreferences("reposted", Context.MODE_PRIVATE)
                         prefs.edit().putStringSet("ids", repostedIds).apply()
                     }
                     // do not delete downloaded files
@@ -1104,7 +1105,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     }
 
     private fun downloadMedia(post: PostInfo): List<File> {
-        val dir = File(requireContext().getExternalFilesDir(null), "SocialToolsApp")
+        val dir = File(this.getExternalFilesDir(null), "SocialToolsApp")
         if (!dir.exists()) dir.mkdirs()
         val files = mutableListOf<File>()
         if (post.isVideo && post.videoUrl != null) {
@@ -1247,7 +1248,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
      */
     private suspend fun commentPostNative(shortcode: String, text: String): Pair<Boolean, String?> {
         val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
-        val context = requireContext()
+        val context = this
         if (!AccessibilityUtils.isServiceEnabled(context, InstagramCommentService::class.java)) {
             withContext(Dispatchers.Main) {
                 startActivity(Intent(context, AiCommentCheckActivity::class.java))
@@ -1282,23 +1283,23 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             suspendCancellableCoroutine<Pair<Boolean, String?>> { cont ->
                 val receiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(ctx: Context?, intent: Intent?) {
-                        if (intent?.action == MainActivity.ACTION_COMMENT_RESULT) {
+                        if (intent?.action == LandingActivity.ACTION_COMMENT_RESULT) {
                             ctx?.unregisterReceiver(this)
                             val success = intent.getBooleanExtra(
-                                MainActivity.EXTRA_COMMENT_SUCCESS,
+                                LandingActivity.EXTRA_COMMENT_SUCCESS,
                                 false
                             )
-                            val error = intent.getStringExtra(MainActivity.EXTRA_COMMENT_ERROR)
+                            val error = intent.getStringExtra(LandingActivity.EXTRA_COMMENT_ERROR)
                             if (cont.isActive) cont.resume(success to error) {}
                         }
                     }
                 }
                 context.registerReceiver(
                     receiver,
-                    android.content.IntentFilter(MainActivity.ACTION_COMMENT_RESULT)
+                    android.content.IntentFilter(LandingActivity.ACTION_COMMENT_RESULT)
                 )
-                val intent = Intent(MainActivity.ACTION_INPUT_COMMENT).apply {
-                    putExtra(MainActivity.EXTRA_COMMENT, text)
+                val intent = Intent(LandingActivity.ACTION_INPUT_COMMENT).apply {
+                    putExtra(LandingActivity.EXTRA_COMMENT, text)
                 }
                 context.sendBroadcast(intent)
                 cont.invokeOnCancellation { context.unregisterReceiver(receiver) }
@@ -1372,10 +1373,19 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 true
             }
             R.id.action_check_ai -> {
-                startActivity(Intent(requireContext(), com.cicero.socialtools.ui.AiCommentCheckActivity::class.java))
+                startActivity(Intent(this, com.cicero.socialtools.ui.AiCommentCheckActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun startPostService() {
+        val intent = Intent(this, com.cicero.socialtools.core.services.PostService::class.java)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
         }
     }
 }

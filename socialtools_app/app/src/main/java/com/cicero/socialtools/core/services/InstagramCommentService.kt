@@ -12,7 +12,7 @@ import android.util.Log
 import com.cicero.socialtools.BuildConfig
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.cicero.socialtools.ui.MainActivity
+import com.cicero.socialtools.ui.LandingActivity
 
 /** Accessibility service that fills the comment field in Instagram and presses Post. */
 class InstagramCommentService : AccessibilityService() {
@@ -25,17 +25,17 @@ class InstagramCommentService : AccessibilityService() {
     }
 
     private fun sendLog(message: String) {
-        val intent = Intent(MainActivity.ACTION_ACCESSIBILITY_LOG).apply {
-            putExtra(MainActivity.EXTRA_LOG_MESSAGE, message)
+        val intent = Intent(LandingActivity.ACTION_ACCESSIBILITY_LOG).apply {
+            putExtra(LandingActivity.EXTRA_LOG_MESSAGE, message)
         }
         sendBroadcast(intent)
         Log.d(TAG, message)
     }
 
     private fun sendResult(success: Boolean, error: String? = null) {
-        val intent = Intent(MainActivity.ACTION_COMMENT_RESULT).apply {
-            putExtra(MainActivity.EXTRA_COMMENT_SUCCESS, success)
-            putExtra(MainActivity.EXTRA_COMMENT_ERROR, error)
+        val intent = Intent(LandingActivity.ACTION_COMMENT_RESULT).apply {
+            putExtra(LandingActivity.EXTRA_COMMENT_SUCCESS, success)
+            putExtra(LandingActivity.EXTRA_COMMENT_ERROR, error)
         }
         sendBroadcast(intent)
     }
@@ -100,15 +100,15 @@ class InstagramCommentService : AccessibilityService() {
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == MainActivity.ACTION_INPUT_COMMENT) {
-                currentComment = intent.getStringExtra(MainActivity.EXTRA_COMMENT)
+            if (intent?.action == LandingActivity.ACTION_INPUT_COMMENT) {
+                currentComment = intent.getStringExtra(LandingActivity.EXTRA_COMMENT)
                 fillComment()
             }
         }
     }
 
     override fun onServiceConnected() {
-        registerReceiver(receiver, IntentFilter(MainActivity.ACTION_INPUT_COMMENT))
+        registerReceiver(receiver, IntentFilter(LandingActivity.ACTION_INPUT_COMMENT))
         sendLog("Accessibility service connected")
     }
 
