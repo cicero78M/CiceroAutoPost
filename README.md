@@ -43,3 +43,6 @@ To build the app:
 cd socialtools_app
 ./gradlew assembleDebug
 ```
+
+For a full walkthrough of the setup process, including submodule initialization,
+see [docs/SETUP.md](docs/SETUP.md).
