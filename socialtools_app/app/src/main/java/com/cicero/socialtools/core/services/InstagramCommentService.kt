@@ -28,9 +28,10 @@ class InstagramCommentService : AccessibilityService() {
         Log.d(TAG, message)
     }
 
-    private fun sendResult(success: Boolean) {
+    private fun sendResult(success: Boolean, error: String? = null) {
         val intent = Intent(MainActivity.ACTION_COMMENT_RESULT).apply {
             putExtra(MainActivity.EXTRA_COMMENT_SUCCESS, success)
+            putExtra(MainActivity.EXTRA_COMMENT_ERROR, error)
         }
         sendBroadcast(intent)
     }
@@ -107,8 +108,9 @@ class InstagramCommentService : AccessibilityService() {
             var root = rootInActiveWindow
             if (BuildConfig.DEBUG) logTree(root)
             if (root == null) {
-                sendLog("Root window is null")
-                sendResult(false)
+                val msg = "Root window is null"
+                sendLog(msg)
+                sendResult(false, msg)
                 return@Thread
             }
 
@@ -136,8 +138,9 @@ class InstagramCommentService : AccessibilityService() {
                 ).firstOrNull() ?: findFirstEditText(root)
             }
             if (input == null) {
-                sendLog("Comment input not found")
-                sendResult(false)
+                val msg = "Comment input not found"
+                sendLog(msg)
+                sendResult(false, msg)
                 return@Thread
             }
 

@@ -743,9 +743,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                             continue
                         }
                         try {
-                            val ok = commentPostNative(code, text)
+                            val (ok, err) = commentPostNative(code, text)
                             if (!ok) {
-                                withContext(Dispatchers.Main) { appendLog("> failed commenting [$code]") }
+                                val msg = err?.let { "[$code] $it" } ?: "[$code]"
+                                withContext(Dispatchers.Main) { appendLog("> failed commenting $msg") }
                                 return false
                             }
                             withContext(Dispatchers.Main) {
@@ -968,9 +969,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                         continue
                     }
                     try {
-                        val ok = commentPostNative(code, text)
+                        val (ok, err) = commentPostNative(code, text)
                         if (!ok) {
-                            appendLog("> failed commenting [$code]")
+                            val msg = err?.let { "[$code] $it" } ?: "[$code]"
+                            appendLog("> failed commenting $msg")
                             break
                         }
                         appendLog(
@@ -1258,14 +1260,14 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
      * Opens the Instagram post for the given shortcode and injects the provided
      * comment text using the accessibility service.
      */
-    private suspend fun commentPostNative(shortcode: String, text: String): Boolean {
+    private suspend fun commentPostNative(shortcode: String, text: String): Pair<Boolean, String?> {
         val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
         val context = requireContext()
         if (!AccessibilityUtils.isServiceEnabled(context, InstagramCommentService::class.java)) {
             withContext(Dispatchers.Main) {
                 startActivity(Intent(context, AiCommentCheckActivity::class.java))
             }
-            return false
+            return false to "service disabled"
         }
         val pm = context.packageManager
         val appIntent = Intent(Intent.ACTION_VIEW, uri).apply {
@@ -1287,12 +1289,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 ).show()
             }
         }
-        if (!canUseApp) return false
+        if (!canUseApp) return false to "instagram app missing"
 
         delay(3000)
 
         val result = withTimeoutOrNull(15000) {
-            suspendCancellableCoroutine<Boolean> { cont ->
+            suspendCancellableCoroutine<Pair<Boolean, String?>> { cont ->
                 val receiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(ctx: Context?, intent: Intent?) {
                         if (intent?.action == MainActivity.ACTION_COMMENT_RESULT) {
@@ -1301,7 +1303,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                                 MainActivity.EXTRA_COMMENT_SUCCESS,
                                 false
                             )
-                            if (cont.isActive) cont.resume(success) {}
+                            val error = intent.getStringExtra(MainActivity.EXTRA_COMMENT_ERROR)
+                            if (cont.isActive) cont.resume(success to error) {}
                         }
                     }
                 }
@@ -1315,7 +1318,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 context.sendBroadcast(intent)
                 cont.invokeOnCancellation { context.unregisterReceiver(receiver) }
             }
-        } ?: false
+        } ?: (false to "timeout")
 
         delay(2000)
         val back = pm.getLaunchIntentForPackage(context.packageName)
