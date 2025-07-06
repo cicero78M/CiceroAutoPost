@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.cicero.socialtools.BuildConfig
 import android.view.accessibility.AccessibilityEvent
@@ -19,6 +21,7 @@ class InstagramCommentService : AccessibilityService() {
     companion object {
         private const val TAG = "InstagramCommentService"
         private const val ACCESS_DELAY_MS = 3000L
+        private const val COMMENT_READY_TEXT = "Tambahkan komentar…"
     }
 
     private fun sendLog(message: String) {
@@ -47,6 +50,16 @@ class InstagramCommentService : AccessibilityService() {
         Log.d(TAG, indent + info)
         for (i in 0 until node.childCount) {
             logTree(node.getChild(i), indent + "  ")
+        }
+    }
+
+    private fun printAllNodes(node: AccessibilityNodeInfo?, depth: Int = 0) {
+        if (!BuildConfig.DEBUG) return
+        if (node == null) return
+        val prefix = " ".repeat(depth * 2)
+        Log.d("NodeTree", "$prefix ${'$'}{node.className} text=${'$'}{node.text} id=${'$'}{node.viewIdResourceName}")
+        for (i in 0 until node.childCount) {
+            printAllNodes(node.getChild(i), depth + 1)
         }
     }
 
@@ -86,7 +99,22 @@ class InstagramCommentService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // no-op
+        if (event?.packageName != "com.instagram.android") return
+        if (currentComment == null) return
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            val root = rootInActiveWindow
+            if (root == null) {
+                Log.e(TAG, "Root window masih null.")
+                return@postDelayed
+            }
+            val captionNodes = root.findAccessibilityNodeInfosByText(COMMENT_READY_TEXT)
+            if (captionNodes.isNullOrEmpty()) {
+                Log.d(TAG, "Komentar belum siap")
+                return@postDelayed
+            }
+            fillComment()
+        }, 2000)
     }
 
     override fun onInterrupt() {}
@@ -110,12 +138,16 @@ class InstagramCommentService : AccessibilityService() {
             // Retry a few times to allow the Instagram window to fully load
             repeat(10) {
                 root = rootInActiveWindow
-                if (root != null) return@repeat
+                val ready = root
+                    ?.findAccessibilityNodeInfosByText(COMMENT_READY_TEXT)
+                    ?.isNotEmpty() == true
+                if (ready) return@repeat
+                root = null
                 Thread.sleep(ACCESS_DELAY_MS)
             }
             if (BuildConfig.DEBUG) logTree(root)
             val rootNode = root ?: run {
-                val msg = "Root window is null"
+                val msg = "Instagram UI not ready"
                 sendLog(msg)
                 sendResult(false, msg)
                 return@Thread
