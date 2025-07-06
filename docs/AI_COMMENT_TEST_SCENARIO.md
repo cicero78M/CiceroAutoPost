@@ -92,3 +92,11 @@ Tambahkan entri berikut di `AndroidManifest.xml`:
 Dengan konfigurasi di atas, ketika broadcast berisi komentar dikirim,
 `InstagramCommentService` akan mengisi kolom komentar pada postingan yang
 sedang terbuka dan menekan tombol "Post" secara otomatis.
+
+### Troubleshooting
+
+Jika log menampilkan pesan **"Root window is null"**, pastikan tampilan
+Instagram yang berisi kolom komentar sudah terbuka sepenuhnya. Accessibility
+Service membutuhkan jendela aktif yang valid agar bisa menemukan input
+komentar. Coba tunggu beberapa detik setelah membuka postingan atau tekan
+tombol komentar secara manual sebelum mengirim broadcast.
