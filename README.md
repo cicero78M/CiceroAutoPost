@@ -46,3 +46,6 @@ cd socialtools_app
 
 For a full walkthrough of the setup process, including submodule initialization,
 see [docs/SETUP.md](docs/SETUP.md).
+
+Usage scenarios for basic and premium users are described in
+[docs/BASIC_PREMIUM_SCENARIO.md](docs/BASIC_PREMIUM_SCENARIO.md).
