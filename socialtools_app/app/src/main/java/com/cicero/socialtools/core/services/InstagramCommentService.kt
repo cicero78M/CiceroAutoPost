@@ -84,6 +84,20 @@ class InstagramCommentService : AccessibilityService() {
         return null
     }
 
+    private fun waitForRoot(maxAttempts: Int = 20): AccessibilityNodeInfo? {
+        var attempts = 0
+        var root: AccessibilityNodeInfo? = null
+        while (attempts < maxAttempts && root == null) {
+            root = rootInActiveWindow
+            if (root == null) {
+                Log.d(TAG, "Root window is null, polling...")
+                Thread.sleep(ACCESS_DELAY_MS)
+                attempts++
+            }
+        }
+        return root
+    }
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == MainActivity.ACTION_INPUT_COMMENT) {
@@ -103,9 +117,9 @@ class InstagramCommentService : AccessibilityService() {
         if (currentComment == null) return
 
         Handler(Looper.getMainLooper()).postDelayed({
-            val root = rootInActiveWindow
+            var root = waitForRoot()
             if (root == null) {
-                Log.e(TAG, "Root window masih null.")
+                Log.e(TAG, "Root window masih null setelah polling.")
                 return@postDelayed
             }
             val captionNodes = root.findAccessibilityNodeInfosByText(COMMENT_READY_TEXT)
@@ -134,17 +148,7 @@ class InstagramCommentService : AccessibilityService() {
             sendLog("Starting comment workflow")
             // wait to ensure post is fully opened
             Thread.sleep(ACCESS_DELAY_MS)
-            var root: AccessibilityNodeInfo? = null
-            // Retry a few times to allow the Instagram window to fully load
-            repeat(10) {
-                root = rootInActiveWindow
-                val ready = root
-                    ?.findAccessibilityNodeInfosByText(COMMENT_READY_TEXT)
-                    ?.isNotEmpty() == true
-                if (ready) return@repeat
-                root = null
-                Thread.sleep(ACCESS_DELAY_MS)
-            }
+            var root = waitForRoot()
             if (BuildConfig.DEBUG) logTree(root)
             val rootNode = root ?: run {
                 val msg = "Instagram UI not ready"
