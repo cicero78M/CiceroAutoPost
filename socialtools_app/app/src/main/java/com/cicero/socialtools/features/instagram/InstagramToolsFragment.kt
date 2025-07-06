@@ -20,7 +20,10 @@ import com.bumptech.glide.Glide
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.MainActivity
+import com.cicero.socialtools.ui.AiCommentCheckActivity
 import com.cicero.socialtools.utils.OpenAiUtils
+import com.cicero.socialtools.utils.AccessibilityUtils
+import com.cicero.socialtools.core.services.InstagramCommentService
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
@@ -1258,6 +1261,12 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private suspend fun commentPostNative(shortcode: String, text: String): Boolean {
         val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
         val context = requireContext()
+        if (!AccessibilityUtils.isServiceEnabled(context, InstagramCommentService::class.java)) {
+            withContext(Dispatchers.Main) {
+                startActivity(Intent(context, AiCommentCheckActivity::class.java))
+            }
+            return false
+        }
         val pm = context.packageManager
         val appIntent = Intent(Intent.ACTION_VIEW, uri).apply {
             setPackage("com.instagram.android")
