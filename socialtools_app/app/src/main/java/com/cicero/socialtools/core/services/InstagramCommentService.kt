@@ -58,6 +58,17 @@ class InstagramCommentService : AccessibilityService() {
         return null
     }
 
+    private fun findByDesc(node: AccessibilityNodeInfo?, text: String): AccessibilityNodeInfo? {
+        if (node == null) return null
+        val desc = node.contentDescription?.toString() ?: ""
+        if (desc.contains(text, ignoreCase = true)) return node
+        for (i in 0 until node.childCount) {
+            val found = findByDesc(node.getChild(i), text)
+            if (found != null) return found
+        }
+        return null
+    }
+
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == MainActivity.ACTION_INPUT_COMMENT) {
@@ -102,22 +113,27 @@ class InstagramCommentService : AccessibilityService() {
             }
 
             // detect and open comment composer
-            root.findAccessibilityNodeInfosByText("Comment")
-                .firstOrNull()?.let {
-                    sendLog("Opening comment composer")
-                    it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                    Thread.sleep(500)
-                    root = rootInActiveWindow
-                    if (BuildConfig.DEBUG) logTree(root)
-                }
+            val commentBtn =
+                findByDesc(root, "comment") ?: root.findAccessibilityNodeInfosByText("Comment").firstOrNull()
+            commentBtn?.let {
+                sendLog("Opening comment composer")
+                it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                Thread.sleep(500)
+                root = rootInActiveWindow
+                if (BuildConfig.DEBUG) logTree(root)
+            }
 
-            var input = findFirstEditText(root)
+            var input = root.findAccessibilityNodeInfosByViewId(
+                "com.instagram.android:id/layout_comment_thread_edittext"
+            ).firstOrNull() ?: findFirstEditText(root)
             if (input == null) {
                 sendLog("Comment input not found, retrying")
                 Thread.sleep(500)
                 root = rootInActiveWindow
                 if (BuildConfig.DEBUG) logTree(root)
-                input = findFirstEditText(root)
+                input = root.findAccessibilityNodeInfosByViewId(
+                    "com.instagram.android:id/layout_comment_thread_edittext"
+                ).firstOrNull() ?: findFirstEditText(root)
             }
             if (input == null) {
                 sendLog("Comment input not found")
@@ -134,11 +150,12 @@ class InstagramCommentService : AccessibilityService() {
             input?.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
             input?.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
             sendLog("Inserted comment text")
-            root?.findAccessibilityNodeInfosByText("Post")
-                ?.firstOrNull()?.let {
-                    sendLog("Pressing Post button")
-                    it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                }
+            val postBtn = root?.findAccessibilityNodeInfosByText("Post")?.firstOrNull()
+                ?: findByDesc(root, "Post")
+            postBtn?.let {
+                sendLog("Pressing Post button")
+                it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            }
             sendLog("Comment workflow complete")
             sendResult(true)
         }.start()
