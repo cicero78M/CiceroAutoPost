@@ -737,7 +737,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                                 appendLog("> commented [sc=$code, id=$id]", animate = true)
                             }
                             flareCommentedIds.add(code)
-                            val prefs = this.getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
+                            val prefs = this@InstagramToolsActivity.getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
                             prefs.edit().putStringSet("ids", flareCommentedIds).apply()
                             commented = true
                             break
@@ -907,7 +907,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                             appendLog("> liked post [$code]", animate = true)
                             liked++
                             likedIds.add(code)
-                            val prefs = this.getSharedPreferences("liked", Context.MODE_PRIVATE)
+                            val prefs = this@InstagramToolsActivity.getSharedPreferences("liked", Context.MODE_PRIVATE)
                             prefs.edit().putStringSet("ids", likedIds).apply()
                         } catch (e: Exception) {
                             appendLog("Error liking: ${e.message}")
@@ -967,7 +967,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                         )
                         commented++
                         commentedIds.add(code)
-                        val prefs = this.getSharedPreferences("commented", Context.MODE_PRIVATE)
+                        val prefs = this@InstagramToolsActivity.getSharedPreferences("commented", Context.MODE_PRIVATE)
                         prefs.edit().putStringSet("ids", commentedIds).apply()
                     } catch (e: Exception) {
                         appendLog("Error commenting: ${e.message}")
@@ -1047,7 +1047,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                         appendLog("> repost link: $it", animate = true)
                         withContext(Dispatchers.IO) { sendRepostLink(post.code, it) }
                         repostedIds.add(post.code)
-                        val prefs = this.getSharedPreferences("reposted", Context.MODE_PRIVATE)
+                        val prefs = this@InstagramToolsActivity.getSharedPreferences("reposted", Context.MODE_PRIVATE)
                         prefs.edit().putStringSet("ids", repostedIds).apply()
                     }
                     // do not delete downloaded files
@@ -1337,9 +1337,9 @@ class InstagramToolsActivity : AppCompatActivity() {
 
 
     @Deprecated("Deprecated in Java")
-    override fun onCreateOptionsMenu(menu: android.view.Menu, inflater: android.view.MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-        inflater.inflate(R.menu.menu_instagram_profile, menu)
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_instagram_profile, menu)
+        return true
     }
 
     @Deprecated("Deprecated in Java")
