@@ -21,11 +21,9 @@ import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.MainActivity
 import com.cicero.socialtools.ui.AiCommentCheckActivity
-import com.cicero.socialtools.ui.AiLikeCheckActivity
 import com.cicero.socialtools.utils.OpenAiUtils
 import com.cicero.socialtools.utils.AccessibilityUtils
 import com.cicero.socialtools.core.services.InstagramCommentService
-import com.cicero.socialtools.core.services.InstagramLikeService
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
@@ -79,7 +77,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var profileContainer: View
     private lateinit var startButton: Button
     private lateinit var likeCheckbox: android.widget.CheckBox
-    private lateinit var likeV2Checkbox: android.widget.CheckBox
     private lateinit var repostCheckbox: android.widget.CheckBox
     private lateinit var commentCheckbox: android.widget.CheckBox
     // Removed user-configurable delay UI
@@ -215,7 +212,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
         startButton = view.findViewById(R.id.button_start)
         likeCheckbox = view.findViewById(R.id.checkbox_like)
-        likeV2Checkbox = view.findViewById(R.id.checkbox_like_v2)
         repostCheckbox = view.findViewById(R.id.checkbox_repost)
         commentCheckbox = view.findViewById(R.id.checkbox_comment)
         badgeView = profileView.findViewById(R.id.image_badge)
@@ -252,11 +248,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             processTimeView.text = getString(R.string.loading)
 
             val doLike = likeCheckbox.isChecked
-            val doLikeV2 = likeV2Checkbox.isChecked
             val doRepost = repostCheckbox.isChecked
             val doComment = commentCheckbox.isChecked
-            if (doLike || doLikeV2 || doRepost || doComment) {
-                fetchTodayPosts(doLike, doLikeV2, doRepost, doComment)
+            if (doLike || doRepost || doComment) {
+                fetchTodayPosts(doLike, doRepost, doComment)
             } else {
                 Toast.makeText(requireContext(), "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
             }
@@ -770,7 +765,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
 
 
-    private fun fetchTodayPosts(doLike: Boolean, doLikeV2: Boolean, doRepost: Boolean, doComment: Boolean) {
+    private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean, doComment: Boolean) {
         appendLog(
             ">>> Booting IG automation engine...",
             animate = true
@@ -843,7 +838,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    launchLogAndLikes(client, posts, doLike, doLikeV2, doRepost, doComment)
+                    launchLogAndLikes(client, posts, doLike, doRepost, doComment)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -857,7 +852,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         client: IGClient,
         posts: List<PostInfo>,
         doLike: Boolean,
-        doLikeV2: Boolean,
         doRepost: Boolean,
         doComment: Boolean
     ) {
@@ -928,60 +922,10 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
                 )
             }
 
-            if (doLikeV2) {
-                appendLog(
-                    ">>> Preparing like sequence...",
-                    animate = true
-                )
-                delay(2000)
-                appendLog(
-                    ">>> Executing like routine",
-                    animate = true
-                )
-                var liked = 0
-                for (post in posts.filter { !likedIds.contains(it.code) }) {
-                    appendLog("> processing target post [${post.code}]", animate = true)
-                    likeFlareAccounts(client, 5)
-                    val id = post.id
-                    val code = post.code
-                    appendLog("> checking like status for $code", animate = true)
-                    val alreadyLiked = try {
-                        withContext(Dispatchers.IO) {
-                            client.sendRequest(
-                                com.github.instagram4j.instagram4j.requests.media.MediaInfoRequest(id)
-                            ).join()
-                        }.items.firstOrNull()?.isHas_liked == true
-                    } catch (_: Exception) { false }
-                    val statusText = if (alreadyLiked) "already liked" else "not yet liked"
-                    appendLog("> status: $statusText", animate = true)
-                    if (!alreadyLiked) {
-                        try {
-                            val (ok, err) = likePostNative(code)
-                            if (ok) {
-                                appendLog("> liked post [$code]", animate = true)
-                                liked++
-                                likedIds.add(code)
-                                val prefs = requireContext().getSharedPreferences("liked", Context.MODE_PRIVATE)
-                                prefs.edit().putStringSet("ids", likedIds).apply()
-                            } else {
-                                appendLog("Error liking: ${'$'}err")
-                            }
-                        } catch (e: Exception) {
-                            appendLog("Error liking: ${e.message}")
-                        }
-                    }
-                    delay(randomDelayMs())
-                    scrollRandomFlareFeed(client)
-                    delay(randomDelayMs())
-                }
-                appendLog(
-                    ">>> Like routine finished. $liked posts liked.",
-                    animate = true
-                )
-            }
+
 
             if (doComment) {
-                if (doLike || doLikeV2) {
+                if (doLike) {
                     delay(randomActionDelayMs())
                 }
                 appendLog(
@@ -1038,7 +982,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             }
 
             if (doRepost) {
-                if (doLike || doLikeV2) {
+                if (doLike) {
                     delay(randomActionDelayMs())
                 }
                 appendLog(
@@ -1368,74 +1312,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         return result
     }
 
-    /**
-     * Opens the Instagram post for the given shortcode and presses the like button
-     * using the accessibility service.
-     */
-    private suspend fun likePostNative(shortcode: String): Pair<Boolean, String?> {
-        val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
-        val context = requireContext()
-        if (!AccessibilityUtils.isServiceEnabled(context, InstagramLikeService::class.java)) {
-            withContext(Dispatchers.Main) {
-                startActivity(Intent(context, AiLikeCheckActivity::class.java))
-            }
-            return false to "service disabled"
-        }
-        val pm = context.packageManager
-        val appIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-            setPackage("com.instagram.android")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        val canUseApp = appIntent.resolveActivity(pm) != null
-        withContext(Dispatchers.Main) {
-            if (canUseApp) {
-                startActivity(appIntent)
-            } else {
-                startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-                Toast.makeText(
-                    context,
-                    "Instagram app not found, opening in browser",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-        if (!canUseApp) return false to "instagram app missing"
-
-        delay(10000)
-
-        val result = withTimeoutOrNull(60000) {
-            suspendCancellableCoroutine<Pair<Boolean, String?>> { cont ->
-                val receiver = object : android.content.BroadcastReceiver() {
-                    override fun onReceive(ctx: Context?, intent: Intent?) {
-                        if (intent?.action == MainActivity.ACTION_LIKE_RESULT) {
-                            ctx?.unregisterReceiver(this)
-                            val success = intent.getBooleanExtra(
-                                MainActivity.EXTRA_LIKE_SUCCESS,
-                                false
-                            )
-                            val error = intent.getStringExtra(MainActivity.EXTRA_LIKE_ERROR)
-                            if (cont.isActive) cont.resume(success to error) {}
-                        }
-                    }
-                }
-                context.registerReceiver(
-                    receiver,
-                    android.content.IntentFilter(MainActivity.ACTION_LIKE_RESULT)
-                )
-                val intent = Intent(MainActivity.ACTION_INPUT_LIKE)
-                context.sendBroadcast(intent)
-                cont.invokeOnCancellation { context.unregisterReceiver(receiver) }
-            }
-        } ?: (false to "timeout")
-
-        delay(2000)
-        val back = pm.getLaunchIntentForPackage(context.packageName)
-        back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
-
-        return result
-    }
 
 
     private suspend fun showWaitingDots(duration: Long) {
