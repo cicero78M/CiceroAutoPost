@@ -47,6 +47,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
+import com.google.android.material.snackbar.Snackbar
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -112,6 +113,11 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
             if (intent?.action == MainActivity.ACTION_ACCESSIBILITY_LOG) {
                 intent.getStringExtra(MainActivity.EXTRA_LOG_MESSAGE)?.let { msg ->
                     appendLog(msg)
+                    view?.let { v ->
+                        com.google.android.material.snackbar.Snackbar
+                            .make(v, msg, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                            .show()
+                    }
                 }
             }
         }
