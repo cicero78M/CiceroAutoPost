@@ -1291,7 +1291,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
         }
         if (!canUseApp) return false to "instagram app missing"
 
-        delay(3000)
+        delay(10000)
 
         val result = withTimeoutOrNull(15000) {
             suspendCancellableCoroutine<Pair<Boolean, String?>> { cont ->
