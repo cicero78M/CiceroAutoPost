@@ -64,6 +64,16 @@ class InstagramCommentService : AccessibilityService() {
 }
 ```
 
+## Contoh Skenario Eksekusi
+
+1. Aktifkan `InstagramCommentService` melalui menu aksesibilitas Android.
+2. Jalankan aplikasi sehingga intent `ACTION_INPUT_COMMENT` dikirim.
+3. Aplikasi akan membuka postingan Instagram secara otomatis.
+4. Tunggu hingga teks *"Tambahkan komentar…"* terlihat. Tekan tombol
+   komentar secara manual jika kolom belum muncul.
+5. Setelah kolom input siap, service menuliskan komentar dan menekan
+   tombol **Post**.
+
 ## Konfigurasi Service dan Permission
 Tambahkan entri berikut di `AndroidManifest.xml`:
 ```xml
@@ -100,3 +110,8 @@ Instagram yang berisi kolom komentar sudah terbuka sepenuhnya. Accessibility
 Service membutuhkan jendela aktif yang valid agar bisa menemukan input
 komentar. Coba tunggu beberapa detik setelah membuka postingan atau tekan
 tombol komentar secara manual sebelum mengirim broadcast.
+
+Jika log menampilkan **"Instagram UI not ready"**, tunggu hingga halaman
+postingan termuat sempurna. Pastikan area komentar menampilkan teks
+"Tambahkan komentar…" sebelum mengirim *broadcast* `ACTION_INPUT_COMMENT`.
+Apabila perlu, tekan tombol komentar secara manual agar kolom input muncul.
