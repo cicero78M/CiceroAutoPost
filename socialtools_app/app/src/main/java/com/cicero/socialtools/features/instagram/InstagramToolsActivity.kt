@@ -74,7 +74,7 @@ class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var repostCheckbox: android.widget.CheckBox
     private lateinit var commentCheckbox: android.widget.CheckBox
     // Removed user-configurable delay UI
-    private fun randomActionDelayMs(): Long = Random.nextLong(30000L, 60000L)
+    private fun randomActionDelayMs(): Long = Random.nextLong(60000L, 180000L)
     private val uploadDelayMs: Long = 10000L
     private val videoUploadExtraDelayMs: Long = 90000L
     private val postDelayMs: Long = 120000L
@@ -131,8 +131,8 @@ class InstagramToolsActivity : AppCompatActivity() {
         "divtikpolri"
     )
 
-    private fun randomDelayMs(): Long = Random.nextLong(3000L, 12000L)
-    private fun randomCommentDelayMs(): Long = Random.nextLong(30000L, 120000L)
+    private fun randomDelayMs(): Long = Random.nextLong(60000L, 180000L)
+    private fun randomCommentDelayMs(): Long = Random.nextLong(60000L, 180000L)
 
     private fun createHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
@@ -790,7 +790,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                 var liked = 0
                 for (post in posts.filter { !likedIds.contains(it.code) }) {
                     appendLog("> processing target post [${post.code}]", animate = true)
-                    likeFlareAccounts(client, 5)
+                    likeFlareAccounts(client, 3)
                     val id = post.id
                     val code = post.code
                     appendLog("> checking like status for $code", animate = true)
@@ -849,7 +849,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                     val code = post.code
                     val id = post.id
                     appendLog("> commenting [sc=$code, id=$id]", animate = true)
-                    val proceed = commentFlareAccounts(client, 5)
+                    val proceed = commentFlareAccounts(client, 3)
                     if (!proceed) break
                     val text = withContext(Dispatchers.IO) {
                         fetchAiComment(post.caption ?: "")
