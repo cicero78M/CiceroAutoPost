@@ -113,16 +113,16 @@ class InstagramCommentService : AccessibilityService() {
                 Thread.sleep(500)
             }
             if (BuildConfig.DEBUG) logTree(root)
-            if (root == null) {
+            val rootNode = root ?: run {
                 val msg = "Root window is null"
                 sendLog(msg)
                 sendResult(false, msg)
                 return@Thread
             }
 
-            // detect and open comment composer
+            // detect and open comment composer using the non-null rootNode
             val commentBtn =
-                findByDesc(root, "comment") ?: root.findAccessibilityNodeInfosByText("Comment").firstOrNull()
+                findByDesc(rootNode, "comment") ?: rootNode.findAccessibilityNodeInfosByText("Comment").firstOrNull()
             commentBtn?.let {
                 sendLog("Opening comment composer")
                 it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -131,17 +131,17 @@ class InstagramCommentService : AccessibilityService() {
                 if (BuildConfig.DEBUG) logTree(root)
             }
 
-            var input = root.findAccessibilityNodeInfosByViewId(
+            var input = root?.findAccessibilityNodeInfosByViewId(
                 "com.instagram.android:id/layout_comment_thread_edittext"
-            ).firstOrNull() ?: findFirstEditText(root)
+            )?.firstOrNull() ?: findFirstEditText(root)
             if (input == null) {
                 sendLog("Comment input not found, retrying")
                 Thread.sleep(500)
                 root = rootInActiveWindow
                 if (BuildConfig.DEBUG) logTree(root)
-                input = root.findAccessibilityNodeInfosByViewId(
+                input = root?.findAccessibilityNodeInfosByViewId(
                     "com.instagram.android:id/layout_comment_thread_edittext"
-                ).firstOrNull() ?: findFirstEditText(root)
+                )?.firstOrNull() ?: findFirstEditText(root)
             }
             if (input == null) {
                 val msg = "Comment input not found"
