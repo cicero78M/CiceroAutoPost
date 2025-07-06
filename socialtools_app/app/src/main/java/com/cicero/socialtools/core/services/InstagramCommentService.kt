@@ -148,12 +148,7 @@ class InstagramCommentService : AccessibilityService() {
             sendLog("Starting comment workflow")
             // wait to ensure post is fully opened
             Thread.sleep(ACCESS_DELAY_MS)
-            var root = rootInActiveWindow
-            if (root == null) {
-                sendLog("Root window masih null, menunggu 5 detik dan mencoba lagi")
-                Thread.sleep(5000)
-                root = rootInActiveWindow
-            }
+            var root = waitForRoot(10)
             if (BuildConfig.DEBUG) logTree(root)
             val rootNode = root ?: run {
                 val msg = "Instagram UI not ready"
