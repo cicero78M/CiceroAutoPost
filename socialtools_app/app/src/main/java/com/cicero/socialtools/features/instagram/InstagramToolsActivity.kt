@@ -324,13 +324,13 @@ class InstagramToolsActivity : AppCompatActivity() {
                 ensureRemoteData(info)
             } catch (e: IGLoginException) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this, "Gagal login: ${e.loginResponse.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@InstagramToolsActivity, "Gagal login: ${e.loginResponse.message}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Log.e("InstagramToolsFragment", "Login failed", e)
                 withContext(Dispatchers.Main) {
                     val message = e.message ?: e.toString()
-                    Toast.makeText(this, "Error: $message", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@InstagramToolsActivity, "Error: $message", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -340,9 +340,9 @@ class InstagramToolsActivity : AppCompatActivity() {
     @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun promptCode(): String = withContext(Dispatchers.Main) {
         suspendCancellableCoroutine { cont ->
-            val view = LayoutInflater.from(this).inflate(R.layout.dialog_two_factor, null)
-            val input = findViewById<EditText>(R.id.edit_code)
-            AlertDialog.Builder(this)
+            val view = LayoutInflater.from(this@InstagramToolsActivity).inflate(R.layout.dialog_two_factor, null)
+            val input = view.findViewById<EditText>(R.id.edit_code)
+            AlertDialog.Builder(this@InstagramToolsActivity)
                 .setView(view)
                 .setCancelable(false)
                 .setPositiveButton("OK") { _, _ ->
