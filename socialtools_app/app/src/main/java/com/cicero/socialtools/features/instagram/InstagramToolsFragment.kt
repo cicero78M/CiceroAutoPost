@@ -82,9 +82,8 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
     private lateinit var likeV2Checkbox: android.widget.CheckBox
     private lateinit var repostCheckbox: android.widget.CheckBox
     private lateinit var commentCheckbox: android.widget.CheckBox
-    private lateinit var delaySeekBar: android.widget.SeekBar
-    private lateinit var delayText: TextView
-    private var actionDelayMs: Long = 30000L
+    // Removed user-configurable delay UI
+    private fun randomActionDelayMs(): Long = Random.nextLong(30000L, 60000L)
     private val uploadDelayMs: Long = 10000L
     private val videoUploadExtraDelayMs: Long = 90000L
     private val postDelayMs: Long = 120000L
@@ -212,22 +211,6 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
         // Removed Twitter and TikTok containers
         targetLinkInput = view.findViewById(R.id.input_target_link)
-
-        delaySeekBar = view.findViewById(R.id.seekbar_delay)
-        delayText = view.findViewById(R.id.text_delay_value)
-        actionDelayMs = delaySeekBar.progress * 1000L
-        delayText.text =
-            "Delay: ${delaySeekBar.progress} detik"
-        delaySeekBar.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                actionDelayMs = progress * 1000L
-                delayText.text = "Delay: $progress detik"
-            }
-
-            override fun onStartTrackingTouch(seekBar: android.widget.SeekBar?) {}
-
-            override fun onStopTrackingTouch(seekBar: android.widget.SeekBar?) {}
-        })
 
 
         startButton = view.findViewById(R.id.button_start)
@@ -999,7 +982,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
             if (doComment) {
                 if (doLike || doLikeV2) {
-                    delay(actionDelayMs)
+                    delay(randomActionDelayMs())
                 }
                 appendLog(
                     ">>> Preparing comment sequence...",
@@ -1056,7 +1039,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
             if (doRepost) {
                 if (doLike || doLikeV2) {
-                    delay(actionDelayMs)
+                    delay(randomActionDelayMs())
                 }
                 appendLog(
                     ">>> Initiating environment for re-post ops...",
