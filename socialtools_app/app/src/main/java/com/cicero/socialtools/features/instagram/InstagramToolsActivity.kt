@@ -78,6 +78,7 @@ class InstagramToolsActivity : AppCompatActivity() {
     private val uploadDelayMs: Long = 10000L
     private val videoUploadExtraDelayMs: Long = 90000L
     private val postDelayMs: Long = 120000L
+    private val THREE_DAYS_MS: Long = 3 * 24 * 60 * 60 * 1000L
     private lateinit var badgeView: ImageView
     private lateinit var logContainer: android.widget.LinearLayout
     private lateinit var logScroll: android.widget.ScrollView
@@ -104,6 +105,52 @@ class InstagramToolsActivity : AppCompatActivity() {
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
     private var startTimeMs: Long = 0L
+
+    private fun canLikeBasic(username: String): Boolean {
+        val prefs = getSharedPreferences("basic_like_limits", Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val record = prefs.getString(username, null)
+        var count = 0
+        var since = now
+        if (record != null) {
+            val parts = record.split("|")
+            if (parts.size == 2) {
+                count = parts[0].toIntOrNull() ?: 0
+                since = parts[1].toLongOrNull() ?: now
+            }
+            if (now - since >= THREE_DAYS_MS) {
+                count = 0
+                since = now
+            }
+        }
+        return if (count >= 3) {
+            false
+        } else {
+            prefs.edit().putString(username, "$count|$since").apply()
+            true
+        }
+    }
+
+    private fun recordBasicLike(username: String) {
+        val prefs = getSharedPreferences("basic_like_limits", Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val record = prefs.getString(username, null)
+        var count = 0
+        var since = now
+        if (record != null) {
+            val parts = record.split("|")
+            if (parts.size == 2) {
+                count = parts[0].toIntOrNull() ?: 0
+                since = parts[1].toLongOrNull() ?: now
+            }
+            if (now - since >= THREE_DAYS_MS) {
+                count = 0
+                since = now
+            }
+        }
+        count++
+        prefs.edit().putString(username, "$count|$since").apply()
+    }
     private val accessibilityLogReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == LandingActivity.ACTION_ACCESSIBILITY_LOG) {
@@ -790,6 +837,10 @@ class InstagramToolsActivity : AppCompatActivity() {
                 var liked = 0
                 for (post in posts.filter { !likedIds.contains(it.code) }) {
                     appendLog("> processing target post [${post.code}]", animate = true)
+                    if (!isPremium && !canLikeBasic(targetUsername)) {
+                        appendLog("> basic like limit reached for @$targetUsername", animate = true)
+                        break
+                    }
                     likeFlareAccounts(client, 3)
                     val id = post.id
                     val code = post.code
@@ -815,6 +866,9 @@ class InstagramToolsActivity : AppCompatActivity() {
                             likedIds.add(code)
                             val prefs = this@InstagramToolsActivity.getSharedPreferences("liked", Context.MODE_PRIVATE)
                             prefs.edit().putStringSet("ids", likedIds).apply()
+                            if (!isPremium) {
+                                recordBasicLike(targetUsername)
+                            }
                         } catch (e: Exception) {
                             appendLog("Error liking: ${e.message}")
                         }
