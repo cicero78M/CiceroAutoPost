@@ -1293,7 +1293,7 @@ class InstagramToolsFragment : Fragment(R.layout.fragment_instagram_tools) {
 
         delay(10000)
 
-        val result = withTimeoutOrNull(15000) {
+        val result = withTimeoutOrNull(60000) {
             suspendCancellableCoroutine<Pair<Boolean, String?>> { cont ->
                 val receiver = object : android.content.BroadcastReceiver() {
                     override fun onReceive(ctx: Context?, intent: Intent?) {
