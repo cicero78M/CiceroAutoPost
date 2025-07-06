@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
@@ -25,9 +24,7 @@ import com.cicero.socialtools.utils.OpenAiUtils
 import com.cicero.socialtools.utils.AccessibilityUtils
 import com.cicero.socialtools.core.services.InstagramCommentService
 import com.github.instagram4j.instagram4j.IGClient
-import com.github.instagram4j.instagram4j.IGClient.Builder.LoginHandler
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
-import com.github.instagram4j.instagram4j.exceptions.IGLoginException
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineCarouselMedia
 import com.github.instagram4j.instagram4j.models.media.timeline.TimelineImageMedia
@@ -39,14 +36,12 @@ import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
 import com.github.instagram4j.instagram4j.requests.friendships.FriendshipsActionRequest
 import com.github.instagram4j.instagram4j.responses.media.MediaResponse
-import com.github.instagram4j.instagram4j.utils.IGChallengeUtils
 import com.github.instagram4j.instagram4j.utils.IGUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.withContext
@@ -73,7 +68,6 @@ data class PostInfo(
 
 @Suppress("DEPRECATION")
 class InstagramToolsActivity : AppCompatActivity() {
-    private lateinit var loginContainer: View
     private lateinit var profileContainer: View
     private lateinit var startButton: Button
     private lateinit var likeCheckbox: android.widget.CheckBox
@@ -170,7 +164,7 @@ class InstagramToolsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.fragment_instagram_tools)
+        setContentView(R.layout.activity_instagram_tools)
         startPostService()
 
         setupViews()
@@ -191,9 +185,6 @@ class InstagramToolsActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun setupViews() {
-        val username = findViewById<EditText>(R.id.input_username)
-        val password = findViewById<EditText>(R.id.input_password)
-        loginContainer = findViewById(R.id.login_container)
         profileContainer = findViewById(R.id.profile_layout)
         val profileView = findViewById<View>(R.id.profile_container)
         avatarView = profileView.findViewById(R.id.image_avatar)
@@ -261,98 +252,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         checkSubscriptionStatus(currentUsername)
 
         restoreSession()
-
-
-        findViewById<Button>(R.id.button_login_insta).setOnClickListener {
-            val user = username.text.toString().trim()
-            val pass = password.text.toString().trim()
-            if (user.isNotBlank() && pass.isNotBlank()) {
-                performLogin(user, pass)
-            } else {
-                Toast.makeText(this, "Username dan password wajib diisi", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-
-    private fun loginWithDeviceInfo(
-        user: String,
-        pass: String,
-        twoFactorHandler: LoginHandler,
-        challengeHandler: LoginHandler
-    ): IGClient {
-        val httpClient = IGUtils.defaultHttpClientBuilder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .callTimeout(180, TimeUnit.SECONDS)
-        return IGClient.builder()
-            .username(user)
-            .password(pass)
-            .client(httpClient.build())
-            .onTwoFactor(twoFactorHandler)
-            .onChallenge(challengeHandler)
-            .login()
-    }
-
-
-    private fun performLogin(user: String, pass: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val codePrompt = Callable {
-                runBlocking { promptCode() }
-            }
-
-            val twoFactorHandler = LoginHandler { client, resp ->
-                IGChallengeUtils.resolveTwoFactor(client, resp, codePrompt)
-            }
-            val challengeHandler = LoginHandler { client, resp ->
-                IGChallengeUtils.resolveChallenge(client, resp, codePrompt)
-            }
-
-            try {
-                val client = loginWithDeviceInfo(
-                    user,
-                    pass,
-                    twoFactorHandler,
-                    challengeHandler
-                )
-                client.serialize(clientFile, cookieFile)
-                val info = client.actions().users().info(client.selfProfile.pk).join()
-                withContext(Dispatchers.Main) {
-                    displayProfile(info)
-                }
-                ensureRemoteData(info)
-            } catch (e: IGLoginException) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@InstagramToolsActivity, "Gagal login: ${e.loginResponse.message}", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Log.e("InstagramToolsFragment", "Login failed", e)
-                withContext(Dispatchers.Main) {
-                    val message = e.message ?: e.toString()
-                    Toast.makeText(this@InstagramToolsActivity, "Error: $message", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun promptCode(): String = withContext(Dispatchers.Main) {
-        suspendCancellableCoroutine { cont ->
-            val view = LayoutInflater.from(this@InstagramToolsActivity).inflate(R.layout.dialog_two_factor, null)
-            val input = view.findViewById<EditText>(R.id.edit_code)
-            AlertDialog.Builder(this@InstagramToolsActivity)
-                .setView(view)
-                .setCancelable(false)
-                .setPositiveButton("OK") { _, _ ->
-                    cont.resume(input.text.toString()) {}
-                }
-                .setNegativeButton("Batal") { _, _ ->
-                    cont.resume("") {}
-                }
-                .show()
-        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -372,7 +271,6 @@ class InstagramToolsActivity : AppCompatActivity() {
             avatarView.setImageDrawable(null)
         }
         bioView.text = info?.biography ?: ""
-        loginContainer.visibility = View.GONE
         profileContainer.visibility = View.VISIBLE
         currentUsername = info?.username
         currentUsername?.let { loadSavedLogs(it) }
@@ -385,21 +283,29 @@ class InstagramToolsActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             if (clientFile.exists() && cookieFile.exists()) {
                 try {
-                val client = IGClient.deserialize(
-                    clientFile,
-                    cookieFile,
-                    IGUtils.defaultHttpClientBuilder()
-                        .connectTimeout(60, TimeUnit.SECONDS)
-                        .readTimeout(120, TimeUnit.SECONDS)
-                        .writeTimeout(60, TimeUnit.SECONDS)
-                        .callTimeout(180, TimeUnit.SECONDS)
-                )
-                val info = client.actions().users().info(client.selfProfile.pk).join()
-                withContext(Dispatchers.Main) { displayProfile(info) }
-                ensureRemoteData(info)
-                checkSubscriptionStatus(info?.username)
+                    val client = IGClient.deserialize(
+                        clientFile,
+                        cookieFile,
+                        IGUtils.defaultHttpClientBuilder()
+                            .connectTimeout(60, TimeUnit.SECONDS)
+                            .readTimeout(120, TimeUnit.SECONDS)
+                            .writeTimeout(60, TimeUnit.SECONDS)
+                            .callTimeout(180, TimeUnit.SECONDS)
+                    )
+                    val info = client.actions().users().info(client.selfProfile.pk).join()
+                    withContext(Dispatchers.Main) { displayProfile(info) }
+                    ensureRemoteData(info)
+                    checkSubscriptionStatus(info?.username)
                 } catch (_: Exception) {
-                    // ignore invalid session
+                    withContext(Dispatchers.Main) {
+                        startActivity(Intent(this@InstagramToolsActivity, com.cicero.socialtools.ui.LoginActivity::class.java))
+                        finish()
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    startActivity(Intent(this@InstagramToolsActivity, com.cicero.socialtools.ui.LoginActivity::class.java))
+                    finish()
                 }
             }
         }
@@ -1363,11 +1269,11 @@ class InstagramToolsActivity : AppCompatActivity() {
                     } catch (_: Exception) {
                     }
                     withContext(Dispatchers.Main) {
-                        profileContainer.visibility = View.GONE
-                        loginContainer.visibility = View.VISIBLE
                         currentUsername = null
                         clientFile.delete()
                         cookieFile.delete()
+                        startActivity(Intent(this@InstagramToolsActivity, com.cicero.socialtools.ui.LoginActivity::class.java))
+                        finish()
                     }
                 }
                 true

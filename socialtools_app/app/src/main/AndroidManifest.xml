@@ -26,6 +26,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.LoginActivity" android:exported="true" />
         <activity android:name=".features.instagram.InstagramToolsActivity" android:exported="true" />
         <activity android:name=".ui.AiCommentCheckActivity" android:exported="false" />
         <service
