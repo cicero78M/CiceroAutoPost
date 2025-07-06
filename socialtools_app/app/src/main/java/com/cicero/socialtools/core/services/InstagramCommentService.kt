@@ -18,6 +18,7 @@ class InstagramCommentService : AccessibilityService() {
 
     companion object {
         private const val TAG = "InstagramCommentService"
+        private const val ACCESS_DELAY_MS = 3000L
     }
 
     private fun sendLog(message: String) {
@@ -104,13 +105,13 @@ class InstagramCommentService : AccessibilityService() {
         Thread {
             sendLog("Starting comment workflow")
             // wait to ensure post is fully opened
-            Thread.sleep(2500)
+            Thread.sleep(ACCESS_DELAY_MS)
             var root: AccessibilityNodeInfo? = null
             // Retry a few times to allow the Instagram window to fully load
             repeat(10) {
                 root = rootInActiveWindow
                 if (root != null) return@repeat
-                Thread.sleep(500)
+                Thread.sleep(ACCESS_DELAY_MS)
             }
             if (BuildConfig.DEBUG) logTree(root)
             val rootNode = root ?: run {
@@ -126,7 +127,7 @@ class InstagramCommentService : AccessibilityService() {
             commentBtn?.let {
                 sendLog("Opening comment composer")
                 it.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-                Thread.sleep(500)
+                Thread.sleep(ACCESS_DELAY_MS)
                 root = rootInActiveWindow
                 if (BuildConfig.DEBUG) logTree(root)
             }
@@ -136,7 +137,7 @@ class InstagramCommentService : AccessibilityService() {
             )?.firstOrNull() ?: findFirstEditText(root)
             if (input == null) {
                 sendLog("Comment input not found, retrying")
-                Thread.sleep(500)
+                Thread.sleep(ACCESS_DELAY_MS)
                 root = rootInActiveWindow
                 if (BuildConfig.DEBUG) logTree(root)
                 input = root?.findAccessibilityNodeInfosByViewId(
