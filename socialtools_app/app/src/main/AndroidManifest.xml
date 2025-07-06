@@ -27,6 +27,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.AiCommentCheckActivity" android:exported="false" />
+        <activity android:name=".ui.AiLikeCheckActivity" android:exported="false" />
         <service
             android:name=".core.services.PostService"
             android:exported="false" />
@@ -40,6 +41,17 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/instagram_comment_service" />
+        </service>
+        <service
+            android:name=".core.services.InstagramLikeService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/instagram_like_service" />
         </service>
     </application>
 </manifest>
