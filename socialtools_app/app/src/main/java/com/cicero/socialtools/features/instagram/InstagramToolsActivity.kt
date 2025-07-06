@@ -517,7 +517,7 @@ class InstagramToolsActivity : AppCompatActivity() {
         animate: Boolean = false
     ) {
         lifecycleScope.launch(Dispatchers.Main) {
-            val tv = TextView(this).apply {
+            val tv = TextView(this@InstagramToolsActivity).apply {
                 typeface = android.graphics.Typeface.MONOSPACE
                 setTextColor(android.graphics.Color.parseColor("#00FF00"))
             }
