@@ -23,7 +23,7 @@ class LandingActivity : AppCompatActivity() {
         setContentView(R.layout.activity_landing)
 
         findViewById<Button>(R.id.button_start).setOnClickListener {
-            startActivity(Intent(this, com.cicero.socialtools.features.instagram.InstagramToolsActivity::class.java))
+            startActivity(Intent(this, LoginActivity::class.java))
             finish()
         }
     }

@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/profile_layout"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/login_background">
+
+    <include
+        android:id="@+id/profile_container"
+        layout="@layout/activity_profile"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:id="@+id/social_icons_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+        <!-- Removed Twitter OAuth and TikTok icons -->
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/options_container"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:layout_marginTop="8dp">
+
+        <CheckBox
+            android:id="@+id/checkbox_like"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Likes"
+            android:checked="false" />
+
+        <CheckBox
+            android:id="@+id/checkbox_repost"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Repost"
+            android:checked="false"
+            android:layout_marginStart="16dp" />
+
+        <CheckBox
+            android:id="@+id/checkbox_comment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Komentar"
+            android:checked="false"
+            android:layout_marginStart="16dp" />
+    </LinearLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:hint="Link Target">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/input_target_link"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        android:id="@+id/button_start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Start"
+        android:layout_margin="16dp" />
+
+    <TextView
+        android:id="@+id/text_process_time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:gravity="center_horizontal"
+        android:text="@string/process_time_placeholder"
+        android:paddingBottom="4dp" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/log_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/console_frame"
+            android:padding="8dp">
+
+            <LinearLayout
+                android:id="@+id/log_container"
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </ScrollView>
+
+        <ImageButton
+            android:id="@+id/button_clear_logs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|top"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_clear_log"
+            android:contentDescription="@string/clear_logs"
+            android:layout_margin="4dp" />
+    </FrameLayout>
+</LinearLayout>
