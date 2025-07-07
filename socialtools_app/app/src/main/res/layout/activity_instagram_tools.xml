@@ -55,12 +55,17 @@
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginTop="8dp"
-        android:hint="Link Target">
+        android:hint="@string/link_target"
+        app:boxBackgroundMode="outline"
+        app:endIconMode="clear_text">
 
         <AutoCompleteTextView
             android:id="@+id/input_target_link"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:inputType="textUri"
+            android:importantForAutofill="yes"
+            android:contentDescription="@string/link_target" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <Button
