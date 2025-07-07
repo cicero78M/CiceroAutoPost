@@ -19,10 +19,7 @@ import com.bumptech.glide.Glide
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.LandingActivity
-import com.cicero.socialtools.ui.AiCommentCheckActivity
-import com.cicero.socialtools.utils.OpenAiUtils
-import com.cicero.socialtools.utils.AccessibilityUtils
-import com.cicero.socialtools.core.services.InstagramCommentService
+
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
 import com.github.instagram4j.instagram4j.models.media.timeline.ImageCarouselItem
@@ -72,7 +69,6 @@ class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var startButton: Button
     private lateinit var likeCheckbox: android.widget.CheckBox
     private lateinit var repostCheckbox: android.widget.CheckBox
-    private lateinit var commentCheckbox: android.widget.CheckBox
     // Removed user-configurable delay UI
     private fun randomActionDelayMs(): Long = Random.nextLong(60000L, 180000L)
     private val uploadDelayMs: Long = 10000L
@@ -97,8 +93,6 @@ class InstagramToolsActivity : AppCompatActivity() {
     private val targetLinks = mutableSetOf<String>()
     private val repostedIds = mutableSetOf<String>()
     private val likedIds = mutableSetOf<String>()
-    private val commentedIds = mutableSetOf<String>()
-    private val flareCommentedIds = mutableSetOf<String>()
     private val clientFile: File by lazy { File(this.filesDir, "igclient.ser") }
     private val cookieFile: File by lazy { File(this.filesDir, "igcookie.ser") }
     private var currentUsername: String? = null
@@ -153,19 +147,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         count++
         prefs.edit().putString(username, "$count|$since").apply()
     }
-    private val accessibilityLogReceiver = object : android.content.BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == LandingActivity.ACTION_ACCESSIBILITY_LOG) {
-                intent.getStringExtra(LandingActivity.EXTRA_LOG_MESSAGE)?.let { msg ->
-                    appendLog(msg)
-                    val rootView = findViewById<View>(android.R.id.content)
-                    com.google.android.material.snackbar.Snackbar
-                        .make(rootView, msg, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
-                        .show()
-                }
-            }
-        }
-    }
     private val flareTargets = listOf(
         "respaskot",
         "humas.polresblitar",
@@ -219,18 +200,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         setupViews()
     }
 
-    override fun onStart() {
-        super.onStart()
-        this.registerReceiver(
-            accessibilityLogReceiver,
-            android.content.IntentFilter(LandingActivity.ACTION_ACCESSIBILITY_LOG)
-        )
-    }
-
-    override fun onStop() {
-        this.unregisterReceiver(accessibilityLogReceiver)
-        super.onStop()
-    }
 
     @SuppressLint("SetTextI18n")
     private fun setupViews() {
@@ -264,7 +233,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         startButton = findViewById(R.id.button_start)
         likeCheckbox = findViewById(R.id.checkbox_like)
         repostCheckbox = findViewById(R.id.checkbox_repost)
-        commentCheckbox = findViewById(R.id.checkbox_comment)
         badgeView = profileView.findViewById(R.id.image_badge)
         logContainer = findViewById(R.id.log_container)
         logScroll = findViewById(R.id.log_scroll)
@@ -281,10 +249,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         repostedIds.addAll(repostPrefs.getStringSet("ids", emptySet()) ?: emptySet())
         val likePrefs = this.getSharedPreferences("liked", Context.MODE_PRIVATE)
         likedIds.addAll(likePrefs.getStringSet("ids", emptySet()) ?: emptySet())
-        val commentPrefs = this.getSharedPreferences("commented", Context.MODE_PRIVATE)
-        commentedIds.addAll(commentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
-        val flareCommentPrefs = this.getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
-        flareCommentedIds.addAll(flareCommentPrefs.getStringSet("ids", emptySet()) ?: emptySet())
         fetchTargetAccount()
 
         startButton.setOnClickListener {
@@ -308,9 +272,8 @@ class InstagramToolsActivity : AppCompatActivity() {
 
             val doLike = likeCheckbox.isChecked
             val doRepost = repostCheckbox.isChecked
-            val doComment = commentCheckbox.isChecked
-            if (doLike || doRepost || doComment) {
-                fetchTodayPosts(doLike, doRepost, doComment)
+            if (doLike || doRepost) {
+                fetchTodayPosts(doLike, doRepost)
             } else {
                 Toast.makeText(this, "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
             }
@@ -653,93 +616,8 @@ class InstagramToolsActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun commentFlareAccounts(client: IGClient, count: Int): Boolean {
-        withContext(Dispatchers.Main) {
-            appendLog(">>> Commenting flare accounts", animate = true)
-        }
-        for (username in flareTargets.shuffled().take(count)) {
-            withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
-            var attempt = 0
-            var success = false
-            while (attempt < 5 && !success) {
-                try {
-                    val action = withContext(Dispatchers.IO) {
-                        client.actions().users().findByUsername(username).join()
-                    }
-                    val resp = withContext(Dispatchers.IO) {
-                        val req = FeedUserRequest(action.user.pk)
-                        client.sendRequest(req).join()
-                    }
-                    val candidates = resp.items.take(12)
-                    var commented = false
-                    var skippedNoText = 0
-                    var failed = 0
-                    for (item in candidates) {
-                        val id = item.id
-                        val code = item.code
-                        withContext(Dispatchers.Main) {
-                            appendLog("> commenting [sc=$code, id=$id]", animate = true)
-                        }
-                        if (flareCommentedIds.contains(code)) {
-                            withContext(Dispatchers.Main) { appendLog("> skip [$code] - already commented") }
-                            continue
-                        }
-                        val captionText = item.caption?.text ?: ""
-                        Log.d("InstagramToolsFragment", "Candidate $code caption: ${captionText.take(40)}")
-                        // Generate a friendly and supportive comment for the post caption
-                        // using OpenAI with a 15-word limit
-                        val aiComment = withContext(Dispatchers.IO) { fetchAiComment(captionText) }
-                        if (aiComment == null) {
-                            withContext(Dispatchers.Main) { appendLog("> AI comment generation returned null") }
-                            Log.d("InstagramToolsFragment", "AI comment generation returned null")
-                        }
-                        val text = aiComment ?: ""
-                        if (text.isBlank()) {
-                            skippedNoText++
-                            withContext(Dispatchers.Main) { appendLog("> skip [$code] - no comment text") }
-                            continue
-                        }
-                        try {
-                            val (ok, err) = commentPostNative(code, text)
-                            if (!ok) {
-                                val msg = err?.let { "[$code] $it" } ?: "[$code]"
-                                withContext(Dispatchers.Main) { appendLog("> failed commenting $msg") }
-                                return false
-                            }
-                            withContext(Dispatchers.Main) {
-                                appendLog("> commented [sc=$code, id=$id]", animate = true)
-                            }
-                            flareCommentedIds.add(code)
-                            val prefs = this@InstagramToolsActivity.getSharedPreferences("flare_commented", Context.MODE_PRIVATE)
-                            prefs.edit().putStringSet("ids", flareCommentedIds).apply()
-                            commented = true
-                            break
-                        } catch (e: Exception) {
-                            failed++
-                            withContext(Dispatchers.Main) { appendLog("Error commenting [$code]: ${e.message}") }
-                        }
-                    }
-                    if (!commented) {
-                        val info = "skipped $skippedNoText, failed $failed"
-                        withContext(Dispatchers.Main) {
-                            appendLog("> all recent posts already commented or no text ($info)", animate = true)
-                        }
-                    }
-                    success = true
-                } catch (e: Exception) {
-                    attempt++
-                    withContext(Dispatchers.Main) { appendLog("Error flare @$username: ${e.message}") }
-                    if (attempt < 5) delay(30000)
-                }
-            }
-            delay(randomCommentDelayMs())
-        }
-        return true
-    }
 
-
-
-    private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean, doComment: Boolean) {
+    private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean) {
         appendLog(
             ">>> Booting IG automation engine...",
             animate = true
@@ -812,7 +690,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    launchLogAndLikes(client, posts, doLike, doRepost, doComment)
+                    launchLogAndLikes(client, posts, doLike, doRepost)
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -826,8 +704,7 @@ class InstagramToolsActivity : AppCompatActivity() {
         client: IGClient,
         posts: List<PostInfo>,
         doLike: Boolean,
-        doRepost: Boolean,
-        doComment: Boolean
+        doRepost: Boolean
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             for (post in posts) {
@@ -905,62 +782,6 @@ class InstagramToolsActivity : AppCompatActivity() {
 
 
 
-            if (doComment) {
-                if (doLike) {
-                    delay(randomActionDelayMs())
-                }
-                appendLog(
-                    ">>> Preparing comment sequence...",
-                    animate = true
-                )
-                delay(2000)
-                appendLog(
-                    ">>> Executing comment routine",
-                    animate = true
-                )
-                var commented = 0
-                for (post in posts.filter { !commentedIds.contains(it.code) }) {
-                    val code = post.code
-                    val id = post.id
-                    appendLog("> commenting [sc=$code, id=$id]", animate = true)
-                    val proceed = commentFlareAccounts(client, 3)
-                    if (!proceed) break
-                    val text = withContext(Dispatchers.IO) {
-                        fetchAiComment(post.caption ?: "")
-                    } ?: ""
-                    if (text.isBlank()) {
-                        delay(randomCommentDelayMs())
-                        scrollRandomFlareFeed(client)
-                        delay(randomCommentDelayMs())
-                        continue
-                    }
-                    try {
-                        val (ok, err) = commentPostNative(code, text)
-                        if (!ok) {
-                            val msg = err?.let { "[$code] $it" } ?: "[$code]"
-                            appendLog("> failed commenting $msg")
-                            break
-                        }
-                        appendLog(
-                            "> commented on [sc=$code, id=$id]",
-                            animate = true
-                        )
-                        commented++
-                        commentedIds.add(code)
-                        val prefs = this@InstagramToolsActivity.getSharedPreferences("commented", Context.MODE_PRIVATE)
-                        prefs.edit().putStringSet("ids", commentedIds).apply()
-                    } catch (e: Exception) {
-                        appendLog("Error commenting: ${e.message}")
-                    }
-                    delay(randomCommentDelayMs())
-                    scrollRandomFlareFeed(client)
-                    delay(randomCommentDelayMs())
-                }
-                appendLog(
-                    ">>> Comment routine finished. $commented posts commented.",
-                    animate = true
-                )
-            }
 
             if (doRepost) {
                 if (doLike) {
@@ -1171,127 +992,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         throw lastError ?: RuntimeException("upload failed")
     }
 
-    private fun fetchAiComment(caption: String): String? {
-        val apiKey = BuildConfig.OPENAI_API_KEY.ifBlank {
-            System.getenv("OPENAI_API_KEY") ?: ""
-        }
-        if (apiKey.isBlank()) {
-            appendLog("> AI comment skipped: API key blank")
-            Log.d("InstagramToolsFragment", "OpenAI API key is blank")
-            return null
-        }
-        if (caption.isBlank()) {
-            appendLog("> AI comment skipped: caption empty")
-            Log.d("InstagramToolsFragment", "Caption empty, skipping AI comment")
-            return null
-        }
-        Log.d("InstagramToolsFragment", "Requesting AI comment for caption: ${caption.take(40)}")
-        val json = OpenAiUtils.buildRequestJson(caption)
-        val client = createHttpClient()
-        val req = Request.Builder()
-            .url("https://api.openai.com/v1/chat/completions")
-            .header("Authorization", "Bearer $apiKey")
-            .header("Content-Type", "application/json")
-            .post(json.toRequestBody("application/json; charset=utf-8".toMediaType()))
-            .build()
-        return try {
-            client.newCall(req).execute().use { resp ->
-                val bodyStr = resp.body?.string()
-                if (!resp.isSuccessful) {
-                    appendLog("> OpenAI request failed: ${resp.code} ${bodyStr?.take(80)}")
-                    Log.d(
-                        "InstagramToolsFragment",
-                        "OpenAI request failed: ${resp.code} body: $bodyStr"
-                    )
-                    return null
-                }
-                Log.d("InstagramToolsFragment", "OpenAI raw response: ${bodyStr?.take(60)}")
-                val obj = JSONObject(bodyStr ?: "{}")
-                val text = obj.getJSONArray("choices")
-                    .optJSONObject(0)
-                    ?.optJSONObject("message")
-                    ?.optString("content")
-                    ?.trim()
-                text?.let { limitWords(it, 15) }
-            }
-        } catch (e: Exception) {
-            val details = e.stackTraceToString()
-            appendLog("> OpenAI call error: ${e.javaClass.simpleName}: ${e.message}\n$details")
-            Log.e("InstagramToolsFragment", "OpenAI call error", e)
-            null
-        }
-    }
-
-    /**
-     * Opens the Instagram post for the given shortcode and injects the provided
-     * comment text using the accessibility service.
-     */
-    private suspend fun commentPostNative(shortcode: String, text: String): Pair<Boolean, String?> {
-        val uri = Uri.parse("https://www.instagram.com/p/$shortcode/")
-        val context = this
-        if (!AccessibilityUtils.isServiceEnabled(context, InstagramCommentService::class.java)) {
-            withContext(Dispatchers.Main) {
-                startActivity(Intent(context, AiCommentCheckActivity::class.java))
-            }
-            return false to "service disabled"
-        }
-        val pm = context.packageManager
-        val appIntent = Intent(Intent.ACTION_VIEW, uri).apply {
-            setPackage("com.instagram.android")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        val canUseApp = appIntent.resolveActivity(pm) != null
-        withContext(Dispatchers.Main) {
-            if (canUseApp) {
-                startActivity(appIntent)
-            } else {
-                startActivity(Intent(Intent.ACTION_VIEW, uri).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-                Toast.makeText(
-                    context,
-                    "Instagram app not found, opening in browser",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-        if (!canUseApp) return false to "instagram app missing"
-
-        delay(10000)
-
-        val result = withTimeoutOrNull(60000) {
-            suspendCancellableCoroutine<Pair<Boolean, String?>> { cont ->
-                val receiver = object : android.content.BroadcastReceiver() {
-                    override fun onReceive(ctx: Context?, intent: Intent?) {
-                        if (intent?.action == LandingActivity.ACTION_COMMENT_RESULT) {
-                            ctx?.unregisterReceiver(this)
-                            val success = intent.getBooleanExtra(
-                                LandingActivity.EXTRA_COMMENT_SUCCESS,
-                                false
-                            )
-                            val error = intent.getStringExtra(LandingActivity.EXTRA_COMMENT_ERROR)
-                            if (cont.isActive) cont.resume(success to error) {}
-                        }
-                    }
-                }
-                context.registerReceiver(
-                    receiver,
-                    android.content.IntentFilter(LandingActivity.ACTION_COMMENT_RESULT)
-                )
-                val intent = Intent(LandingActivity.ACTION_INPUT_COMMENT).apply {
-                    putExtra(LandingActivity.EXTRA_COMMENT, text)
-                }
-                context.sendBroadcast(intent)
-                cont.invokeOnCancellation { context.unregisterReceiver(receiver) }
-            }
-        } ?: (false to "timeout")
-
-        delay(2000)
-        val back = pm.getLaunchIntentForPackage(context.packageName)
-        back?.let { withContext(Dispatchers.Main) { startActivity(it) } }
-
-        return result
-    }
 
 
 
@@ -1350,10 +1050,6 @@ class InstagramToolsActivity : AppCompatActivity() {
                         finish()
                     }
                 }
-                true
-            }
-            R.id.action_check_ai -> {
-                startActivity(Intent(this, com.cicero.socialtools.ui.AiCommentCheckActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)

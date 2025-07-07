@@ -17,15 +17,6 @@ uploading a new post, the app compares its caption against the last twelve
 uploads from the logged-in account. If a matching caption is found, the post is
 skipped to avoid re-uploading identical content.
 
-### Native Commenting
-
-Comments are now posted using an `AccessibilityService` that opens the
-Instagram app and injects the generated text into the comment field. This
-pendekatan menggantikan metode `instagram4j` sehingga tidak perlu lagi
-memanggil endpoint web secara langsung.
-For step-by-step usage see
-[docs/PERFORMING_ACCESSIBILITY_COMMENT.md](docs/PERFORMING_ACCESSIBILITY_COMMENT.md).
-
 ## Configuration
 
 Create a `.env` file in the repository root containing any optional
