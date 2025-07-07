@@ -639,7 +639,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         }
     }
 
-    }
 
     @Deprecated("Deprecated in Java")
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
