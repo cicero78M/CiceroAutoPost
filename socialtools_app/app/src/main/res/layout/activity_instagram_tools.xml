@@ -64,7 +64,7 @@
         android:layout_marginTop="8dp"
         android:hint="Link Target">
 
-        <com.google.android.material.textfield.TextInputEditText
+        <AutoCompleteTextView
             android:id="@+id/input_target_link"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
