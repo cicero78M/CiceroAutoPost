@@ -32,6 +32,7 @@ import com.github.instagram4j.instagram4j.requests.accounts.AccountsLogoutReques
 import com.github.instagram4j.instagram4j.requests.feed.FeedUserRequest
 import com.github.instagram4j.instagram4j.requests.media.MediaActionRequest
 import com.github.instagram4j.instagram4j.requests.friendships.FriendshipsActionRequest
+import com.github.instagram4j.instagram4j.requests.friendships.FriendshipsFeedsRequest
 import com.github.instagram4j.instagram4j.responses.media.MediaResponse
 import com.github.instagram4j.instagram4j.utils.IGUtils
 import kotlinx.coroutines.CoroutineScope
@@ -147,19 +148,8 @@ class InstagramToolsActivity : AppCompatActivity() {
         count++
         prefs.edit().putString(username, "$count|$since").apply()
     }
-    private val flareTargets = listOf(
-        "respaskot",
-        "humas.polresblitar",
-        "polres_ponorogo",
-        "polreskediriofficial",
-        "ditlantaspoldajatim",
-        "humaspoldajatim",
-        "ditlantas_poldariau",
-        "ditlantaspoldajateng",
-        "divhumaspolri",
-        "divpropampolri",
-        "divtikpolri"
-    )
+    private val flareTargets = mutableListOf<String>()
+    private val usedFlareTargets = mutableSetOf<String>()
 
     private fun randomDelayMs(): Long = Random.nextLong(60000L, 180000L)
     private fun randomCommentDelayMs(): Long = Random.nextLong(60000L, 180000L)
@@ -172,8 +162,42 @@ class InstagramToolsActivity : AppCompatActivity() {
             .callTimeout(180, TimeUnit.SECONDS)
             .build()
 
+    private suspend fun loadFlareTargets(client: IGClient) {
+        withContext(Dispatchers.Main) { appendLog(">>> Gathering followers for flare list", animate = true) }
+        try {
+            val action = withContext(Dispatchers.IO) { client.actions().users().findByUsername(targetUsername).join() }
+            var maxId: String? = null
+            flareTargets.clear()
+            usedFlareTargets.clear()
+            repeat(5) {
+                val req = FriendshipsFeedsRequest(action.user.pk, FriendshipsFeedsRequest.FriendshipsFeeds.FOLLOWERS)
+                req.setMax_id(maxId)
+                val resp = withContext(Dispatchers.IO) { client.sendRequest(req).join() }
+                resp.users.mapTo(flareTargets) { it.username }
+                maxId = resp.next_max_id
+                if (maxId == null) return@repeat
+            }
+            withContext(Dispatchers.Main) { appendLog("> loaded ${flareTargets.size} flare accounts", animate = true) }
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) { appendLog("Error loading followers: ${e.message}") }
+        }
+    }
+
+    private fun nextFlareBatch(count: Int): List<String> {
+        if (flareTargets.isEmpty()) return emptyList()
+        val available = flareTargets.filter { it !in usedFlareTargets }
+        val selected = if (available.size >= count) {
+            available.shuffled().take(count)
+        } else {
+            usedFlareTargets.clear()
+            flareTargets.shuffled().take(count)
+        }
+        usedFlareTargets.addAll(selected)
+        return selected
+    }
+
     private suspend fun scrollRandomFlareFeed(client: IGClient) {
-        val username = flareTargets.random()
+        val username = flareTargets.randomOrNull() ?: return
         withContext(Dispatchers.Main) { appendLog("> scrolling @$username", animate = true) }
         try {
             withContext(Dispatchers.IO) {
@@ -565,7 +589,8 @@ class InstagramToolsActivity : AppCompatActivity() {
         withContext(Dispatchers.Main) {
             appendLog(">>> Liking flare accounts", animate = true)
         }
-        for (username in flareTargets.shuffled().take(count)) {
+        val targets = nextFlareBatch(count)
+        for (username in targets) {
             withContext(Dispatchers.Main) { appendLog("> flare @$username", animate = true) }
             ensureFollowing(client, username)
             var attempt = 0
@@ -639,6 +664,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                 )
                 val userAction = client.actions().users().findByUsername(targetUsername).join()
                 ensureFollowing(client, targetUsername)
+                loadFlareTargets(client)
                 val user = userAction.user
                 val req = FeedUserRequest(user.pk)
                 val resp = client.sendRequest(req).join()
