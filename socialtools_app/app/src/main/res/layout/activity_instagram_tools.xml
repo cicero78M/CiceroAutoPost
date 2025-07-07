@@ -62,7 +62,7 @@
         <AutoCompleteTextView
             android:id="@+id/input_target_link"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/standard_input_height"
             android:inputType="textUri"
             android:importantForAutofill="yes"
             android:contentDescription="@string/link_target" />
@@ -71,7 +71,7 @@
     <Button
         android:id="@+id/button_start"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="@dimen/standard_input_height"
         android:text="Start"
         android:layout_margin="16dp" />
 
