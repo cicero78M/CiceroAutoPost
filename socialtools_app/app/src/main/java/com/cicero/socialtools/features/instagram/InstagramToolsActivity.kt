@@ -682,4 +682,14 @@ class InstagramToolsActivity : AppCompatActivity() {
             startService(intent)
         }
     }
+
+    /**
+     * Previous versions performed automated like and repost actions here.
+     * The full implementation was removed, but the start button still
+     * expects this entry point. For now we simply log a placeholder
+     * so the app can compile without the legacy workflow.
+     */
+    private fun fetchTodayPosts(doLike: Boolean, doRepost: Boolean, doComment: Boolean) {
+        appendLog("> IG automation has been disabled in this build")
+    }
 }
