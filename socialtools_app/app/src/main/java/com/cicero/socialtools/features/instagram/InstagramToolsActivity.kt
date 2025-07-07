@@ -8,7 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.Button
-import android.widget.EditText
+import android.widget.AutoCompleteTextView
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
@@ -92,7 +92,9 @@ class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var followingView: TextView
     private lateinit var processTimeView: TextView
     // Removed Twitter and TikTok UI elements
-    private lateinit var targetLinkInput: EditText
+    private lateinit var targetLinkInput: AutoCompleteTextView
+    private lateinit var targetAdapter: android.widget.ArrayAdapter<String>
+    private val targetLinks = mutableSetOf<String>()
     private val repostedIds = mutableSetOf<String>()
     private val likedIds = mutableSetOf<String>()
     private val commentedIds = mutableSetOf<String>()
@@ -248,6 +250,16 @@ class InstagramToolsActivity : AppCompatActivity() {
         // Removed Twitter and TikTok containers
         targetLinkInput = findViewById(R.id.input_target_link)
 
+        val targetPrefs = this.getSharedPreferences("target_links", Context.MODE_PRIVATE)
+        targetLinks.addAll(targetPrefs.getStringSet("links", emptySet()) ?: emptySet())
+        targetAdapter = android.widget.ArrayAdapter(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            targetLinks.toList()
+        )
+        targetLinkInput.setAdapter(targetAdapter)
+        targetLinkInput.setOnClickListener { targetLinkInput.showDropDown() }
+
 
         startButton = findViewById(R.id.button_start)
         likeCheckbox = findViewById(R.id.checkbox_like)
@@ -280,6 +292,14 @@ class InstagramToolsActivity : AppCompatActivity() {
             if (target.isBlank()) {
                 Toast.makeText(this, "Link target wajib diisi", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
+            }
+            if (!targetLinks.contains(target)) {
+                targetLinks.add(target)
+                val prefs = this.getSharedPreferences("target_links", Context.MODE_PRIVATE)
+                prefs.edit().putStringSet("links", targetLinks).apply()
+                targetAdapter.clear()
+                targetAdapter.addAll(targetLinks.toList())
+                targetAdapter.notifyDataSetChanged()
             }
             targetUsername = parseUsername(target)
 
