@@ -35,6 +35,9 @@
     <string name="process_time_result">Process time: %1$d s</string>
     <string name="share_twitter">Share Twitter</string>
     <string name="twitter_not_installed">Twitter app not installed</string>
+    <string name="share_tiktok">Share TikTok</string>
+    <string name="tiktok_not_installed">TikTok app not installed</string>
+    <string name="not_a_video">Latest post is not a video</string>
     <string name="twitter_service_description">Twitter posting automation</string>
     <string name="accessibility_settings">Accessibility Service</string>
     <string name="enable_accessibility_service">Please enable accessibility service for auto posting</string>
