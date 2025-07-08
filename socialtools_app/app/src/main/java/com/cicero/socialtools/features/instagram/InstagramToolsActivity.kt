@@ -1163,10 +1163,25 @@ class InstagramToolsActivity : AppCompatActivity() {
                 "${BuildConfig.APPLICATION_ID}.fileprovider",
                 video
             )
+            val packages = arrayOf("com.zhiliaoapp.musically", "com.ss.android.ugc.trill")
+            val installedPackage = packages.firstOrNull { pkg ->
+                packageManager.getLaunchIntentForPackage(pkg) != null
+            }
+            if (installedPackage == null) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@InstagramToolsActivity,
+                        getString(R.string.tiktok_not_installed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    appendLog("TikTok app not installed")
+                }
+                return@launch
+            }
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "video/*"
                 putExtra(Intent.EXTRA_STREAM, uri)
-                setPackage("com.zhiliaoapp.musically")
+                setPackage(installedPackage)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             delay(3000)
