@@ -36,4 +36,6 @@
     <string name="share_twitter">Share Twitter</string>
     <string name="twitter_not_installed">Twitter app not installed</string>
     <string name="twitter_service_description">Twitter posting automation</string>
+    <string name="accessibility_settings">Accessibility Service</string>
+    <string name="enable_accessibility_service">Please enable accessibility service for auto posting</string>
 </resources>

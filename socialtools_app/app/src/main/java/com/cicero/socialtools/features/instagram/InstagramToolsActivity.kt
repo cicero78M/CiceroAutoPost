@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -19,6 +20,8 @@ import com.bumptech.glide.Glide
 import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.LandingActivity
+import com.cicero.socialtools.core.services.TwitterPostService
+import com.cicero.socialtools.utils.AccessibilityUtils
 
 import com.github.instagram4j.instagram4j.IGClient
 import com.github.instagram4j.instagram4j.actions.timeline.TimelineAction
@@ -103,6 +106,13 @@ class InstagramToolsActivity : AppCompatActivity() {
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
     private var startTimeMs: Long = 0L
+
+    private fun ensureTwitterAccessibility() {
+        if (!AccessibilityUtils.isServiceEnabled(this, TwitterPostService::class.java)) {
+            Toast.makeText(this, getString(R.string.enable_accessibility_service), Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+    }
 
     private fun canLikeBasic(username: String): Boolean {
         val prefs = getSharedPreferences("basic_like_limits", Context.MODE_PRIVATE)
@@ -1085,6 +1095,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             withContext(Dispatchers.Main) {
+                ensureTwitterAccessibility()
                 try {
                     startActivity(intent)
                 } catch (_: Exception) {
@@ -1185,6 +1196,10 @@ class InstagramToolsActivity : AppCompatActivity() {
                         finish()
                     }
                 }
+                true
+            }
+            R.id.action_accessibility_settings -> {
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
                 true
             }
             else -> super.onOptionsItemSelected(item)
