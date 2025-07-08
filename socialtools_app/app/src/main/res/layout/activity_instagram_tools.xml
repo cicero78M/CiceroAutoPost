@@ -27,6 +27,14 @@
             android:layout_height="wrap_content"
             android:text="@string/share_twitter"
             android:layout_margin="4dp" />
+
+        <!-- TikTok share button -->
+        <Button
+            android:id="@+id/button_share_tiktok"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/share_tiktok"
+            android:layout_margin="4dp" />
     </LinearLayout>
 
     <LinearLayout
