@@ -1094,6 +1094,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                 setPackage("com.twitter.android")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            delay(3000)
             withContext(Dispatchers.Main) {
                 ensureTwitterAccessibility()
                 try {
