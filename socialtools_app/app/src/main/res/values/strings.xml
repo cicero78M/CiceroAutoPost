@@ -33,7 +33,4 @@
     <string name="whatsapp_message_registration">Halo,\nTerima kasih telah menggunakan aplikasi Social Tools.\n\nBerikut panduan registrasi ulang:\n1. Buka Wabot lalu kirim perintah /register.\n2. Masukkan NRP dan nomor WhatsApp Anda.\n3. Tunggu konfirmasi dari admin.\n\nUntuk menambahkan akun Instagram dan TikTok via Wabot:\n1. Kirim perintah /add_instagram &lt;username&gt;.\n2. Kirim perintah /add_tiktok &lt;username&gt;.\n\nTerima kasih.</string>
     <string name="process_time_placeholder">Process time: -</string>
     <string name="process_time_result">Process time: %1$d s</string>
-    <string name="share_twitter">Share Twitter</string>
-    <string name="twitter_not_installed">Twitter app not installed</string>
-    <string name="twitter_service_description">Twitter posting automation</string>
 </resources>
