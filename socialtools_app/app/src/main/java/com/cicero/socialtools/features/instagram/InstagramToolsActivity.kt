@@ -58,6 +58,8 @@ import java.io.File
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+import android.content.ClipData
+import android.content.ClipboardManager
 
 data class PostInfo(
     val code: String,
@@ -1185,6 +1187,9 @@ class InstagramToolsActivity : AppCompatActivity() {
                 setPackage(installedPackage)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("caption", post.caption ?: "")
+            clipboard.setPrimaryClip(clip)
             // Prefer the TikTok share activity labeled "Video" if available
             val pm = packageManager
             val targets = pm.queryIntentActivities(intent, 0)
