@@ -72,6 +72,7 @@ class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var profileContainer: View
     private lateinit var startButton: Button
     private lateinit var shareTwitterButton: Button
+    private lateinit var shareTiktokButton: Button
     private lateinit var likeCheckbox: android.widget.CheckBox
     private lateinit var repostCheckbox: android.widget.CheckBox
     // Removed user-configurable delay UI
@@ -92,7 +93,7 @@ class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var followersView: TextView
     private lateinit var followingView: TextView
     private lateinit var processTimeView: TextView
-    // Removed Twitter and TikTok UI elements
+    // Share buttons for Twitter and TikTok
     private lateinit var targetLinkInput: AutoCompleteTextView
     private lateinit var targetAdapter: android.widget.ArrayAdapter<String>
     private val targetLinks = mutableSetOf<String>()
@@ -267,6 +268,7 @@ class InstagramToolsActivity : AppCompatActivity() {
 
         startButton = findViewById(R.id.button_start)
         shareTwitterButton = findViewById(R.id.button_share_twitter)
+        shareTiktokButton = findViewById(R.id.button_share_tiktok)
         likeCheckbox = findViewById(R.id.checkbox_like)
         repostCheckbox = findViewById(R.id.checkbox_repost)
         badgeView = profileView.findViewById(R.id.image_badge)
@@ -326,6 +328,27 @@ class InstagramToolsActivity : AppCompatActivity() {
                 val post = fetchLatestPost(targetUsername)
                 if (post != null) {
                     shareToTwitter(post)
+                } else {
+                    Toast.makeText(this@InstagramToolsActivity, "Gagal mengambil post", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        shareTiktokButton.setOnClickListener {
+            val target = targetLinkInput.text.toString().trim()
+            if (target.isBlank()) {
+                Toast.makeText(this, "Link target wajib diisi", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            targetUsername = parseUsername(target)
+            lifecycleScope.launch {
+                val post = fetchLatestPost(targetUsername)
+                if (post != null) {
+                    if (post.isVideo) {
+                        shareToTikTok(post)
+                    } else {
+                        Toast.makeText(this@InstagramToolsActivity, getString(R.string.not_a_video), Toast.LENGTH_SHORT).show()
+                    }
                 } else {
                     Toast.makeText(this@InstagramToolsActivity, "Gagal mengambil post", Toast.LENGTH_SHORT).show()
                 }
@@ -1103,6 +1126,37 @@ class InstagramToolsActivity : AppCompatActivity() {
                     Toast.makeText(
                         this@InstagramToolsActivity,
                         getString(R.string.twitter_not_installed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun shareToTikTok(post: PostInfo) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val files = downloadMedia(post)
+            if (files.isEmpty()) return@launch
+            val video = files.first()
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                this@InstagramToolsActivity,
+                "${BuildConfig.APPLICATION_ID}.fileprovider",
+                video
+            )
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "video/*"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                setPackage("com.zhiliaoapp.musically")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            delay(3000)
+            withContext(Dispatchers.Main) {
+                try {
+                    startActivity(intent)
+                } catch (_: Exception) {
+                    Toast.makeText(
+                        this@InstagramToolsActivity,
+                        getString(R.string.tiktok_not_installed),
                         Toast.LENGTH_SHORT
                     ).show()
                 }
