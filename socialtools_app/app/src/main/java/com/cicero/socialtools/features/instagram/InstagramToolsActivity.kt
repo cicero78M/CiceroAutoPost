@@ -21,6 +21,7 @@ import com.cicero.socialtools.BuildConfig
 import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.LandingActivity
 import com.cicero.socialtools.core.services.TwitterPostService
+import com.cicero.socialtools.core.services.TiktokPostService
 import com.cicero.socialtools.utils.AccessibilityUtils
 
 import com.github.instagram4j.instagram4j.IGClient
@@ -107,9 +108,23 @@ class InstagramToolsActivity : AppCompatActivity() {
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
     private var startTimeMs: Long = 0L
+    private val tiktokReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == TiktokPostService.ACTION_UPLOAD_FINISHED) {
+                appendLog("> TikTok upload finished", animate = true)
+            }
+        }
+    }
 
     private fun ensureTwitterAccessibility() {
         if (!AccessibilityUtils.isServiceEnabled(this, TwitterPostService::class.java)) {
+            Toast.makeText(this, getString(R.string.enable_accessibility_service), Toast.LENGTH_LONG).show()
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
+    }
+
+    private fun ensureTiktokAccessibility() {
+        if (!AccessibilityUtils.isServiceEnabled(this, TiktokPostService::class.java)) {
             Toast.makeText(this, getString(R.string.enable_accessibility_service), Toast.LENGTH_LONG).show()
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -231,6 +246,7 @@ class InstagramToolsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_instagram_tools)
+        registerReceiver(tiktokReceiver, android.content.IntentFilter(TiktokPostService.ACTION_UPLOAD_FINISHED))
         startPostService()
 
         setupViews()
@@ -1135,8 +1151,12 @@ class InstagramToolsActivity : AppCompatActivity() {
 
     private fun shareToTikTok(post: PostInfo) {
         CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) { appendLog(">>> share to TikTok", animate = true) }
             val files = downloadMedia(post)
-            if (files.isEmpty()) return@launch
+            if (files.isEmpty()) {
+                withContext(Dispatchers.Main) { appendLog("Error downloading media") }
+                return@launch
+            }
             val video = files.first()
             val uri = androidx.core.content.FileProvider.getUriForFile(
                 this@InstagramToolsActivity,
@@ -1151,6 +1171,8 @@ class InstagramToolsActivity : AppCompatActivity() {
             }
             delay(3000)
             withContext(Dispatchers.Main) {
+                ensureTiktokAccessibility()
+                appendLog("> launching TikTok", animate = true)
                 try {
                     startActivity(intent)
                 } catch (_: Exception) {
@@ -1159,6 +1181,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                         getString(R.string.tiktok_not_installed),
                         Toast.LENGTH_SHORT
                     ).show()
+                    appendLog("TikTok app not installed")
                 }
             }
         }
@@ -1259,6 +1282,11 @@ class InstagramToolsActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    override fun onDestroy() {
+        unregisterReceiver(tiktokReceiver)
+        super.onDestroy()
     }
 
     private fun startPostService() {
