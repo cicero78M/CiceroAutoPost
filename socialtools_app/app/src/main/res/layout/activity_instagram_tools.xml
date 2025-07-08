@@ -20,7 +20,13 @@
         android:layout_marginTop="8dp"
         android:gravity="center"
         android:orientation="horizontal">
-        <!-- Removed Twitter OAuth and TikTok icons -->
+        <!-- Twitter share button -->
+        <Button
+            android:id="@+id/button_share_twitter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/share_twitter"
+            android:layout_margin="4dp" />
     </LinearLayout>
 
     <LinearLayout

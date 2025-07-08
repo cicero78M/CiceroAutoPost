@@ -68,6 +68,7 @@ data class PostInfo(
 class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var profileContainer: View
     private lateinit var startButton: Button
+    private lateinit var shareTwitterButton: Button
     private lateinit var likeCheckbox: android.widget.CheckBox
     private lateinit var repostCheckbox: android.widget.CheckBox
     // Removed user-configurable delay UI
@@ -255,6 +256,7 @@ class InstagramToolsActivity : AppCompatActivity() {
 
 
         startButton = findViewById(R.id.button_start)
+        shareTwitterButton = findViewById(R.id.button_share_twitter)
         likeCheckbox = findViewById(R.id.checkbox_like)
         repostCheckbox = findViewById(R.id.checkbox_repost)
         badgeView = profileView.findViewById(R.id.image_badge)
@@ -300,6 +302,23 @@ class InstagramToolsActivity : AppCompatActivity() {
                 fetchTodayPosts(doLike, doRepost)
             } else {
                 Toast.makeText(this, "Pilih setidaknya satu aksi", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        shareTwitterButton.setOnClickListener {
+            val target = targetLinkInput.text.toString().trim()
+            if (target.isBlank()) {
+                Toast.makeText(this, "Link target wajib diisi", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            targetUsername = parseUsername(target)
+            lifecycleScope.launch {
+                val post = fetchLatestPost(targetUsername)
+                if (post != null) {
+                    shareToTwitter(post)
+                } else {
+                    Toast.makeText(this@InstagramToolsActivity, "Gagal mengambil post", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -986,6 +1005,96 @@ class InstagramToolsActivity : AppCompatActivity() {
             }
             appendLog("> saved to ${file.name}", animate = true)
         } catch (_: Exception) {
+        }
+    }
+
+    private suspend fun fetchLatestPost(username: String): PostInfo? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val client = IGClient.deserialize(
+                    clientFile,
+                    cookieFile,
+                    IGUtils.defaultHttpClientBuilder()
+                        .connectTimeout(60, TimeUnit.SECONDS)
+                        .readTimeout(120, TimeUnit.SECONDS)
+                        .writeTimeout(60, TimeUnit.SECONDS)
+                        .callTimeout(180, TimeUnit.SECONDS)
+                )
+                val action = client.actions().users().findByUsername(username).join()
+                val resp = client.sendRequest(FeedUserRequest(action.user.pk)).join()
+                val item = resp.items.firstOrNull() ?: return@withContext null
+                val caption = item.caption?.text
+                var isVideo = false
+                var videoUrl: String? = null
+                var coverUrl: String? = null
+                val images = mutableListOf<String>()
+                when (item) {
+                    is TimelineVideoMedia -> {
+                        isVideo = true
+                        videoUrl = item.video_versions?.firstOrNull()?.url
+                        coverUrl = item.image_versions2?.candidates?.firstOrNull()?.url
+                    }
+                    is TimelineImageMedia -> {
+                        item.image_versions2?.candidates?.firstOrNull()?.url?.let { images.add(it) }
+                    }
+                    is TimelineCarouselMedia -> {
+                        for (c in item.carousel_media) {
+                            when (c) {
+                                is ImageCarouselItem -> c.image_versions2.candidates.firstOrNull()?.url?.let { images.add(it) }
+                                is VideoCarouselItem -> {
+                                    isVideo = true
+                                    if (videoUrl == null) videoUrl = c.video_versions?.firstOrNull()?.url
+                                    if (coverUrl == null) coverUrl = c.image_versions2.candidates.firstOrNull()?.url
+                                }
+                            }
+                        }
+                    }
+                }
+                PostInfo(
+                    code = item.code,
+                    id = item.id,
+                    caption = caption,
+                    isVideo = isVideo,
+                    imageUrls = images,
+                    videoUrl = videoUrl,
+                    coverUrl = coverUrl
+                )
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun shareToTwitter(post: PostInfo) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val files = downloadMedia(post)
+            if (files.isEmpty()) return@launch
+            val uris = files.map {
+                androidx.core.content.FileProvider.getUriForFile(
+                    this@InstagramToolsActivity,
+                    "${BuildConfig.APPLICATION_ID}.fileprovider",
+                    it
+                )
+            }
+            val caption = post.caption?.take(210) ?: ""
+            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                type = if (post.isVideo) "video/*" else "image/*"
+                putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+                putExtra(Intent.EXTRA_TEXT, caption)
+                setPackage("com.twitter.android")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            withContext(Dispatchers.Main) {
+                try {
+                    startActivity(intent)
+                } catch (_: Exception) {
+                    Toast.makeText(
+                        this@InstagramToolsActivity,
+                        getString(R.string.twitter_not_installed),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
         }
     }
 
