@@ -5,5 +5,10 @@
         android:icon="@drawable/ic_logout"
         android:title="Logout"
         android:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_accessibility_settings"
+        android:icon="@drawable/ic_status_true"
+        android:title="@string/accessibility_settings"
+        android:showAsAction="never" />
     <!-- Removed premium registration and confirmation actions -->
 </menu>
