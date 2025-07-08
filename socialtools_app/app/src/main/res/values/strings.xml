@@ -39,6 +39,7 @@
     <string name="tiktok_not_installed">TikTok app not installed</string>
     <string name="not_a_video">Latest post is not a video</string>
     <string name="twitter_service_description">Twitter posting automation</string>
+    <string name="tiktok_service_description">TikTok posting automation</string>
     <string name="accessibility_settings">Accessibility Service</string>
     <string name="enable_accessibility_service">Please enable accessibility service for auto posting</string>
 </resources>
