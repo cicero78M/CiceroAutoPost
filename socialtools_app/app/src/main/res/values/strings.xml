@@ -36,6 +36,7 @@
     <string name="share_twitter">Share Twitter</string>
     <string name="twitter_not_installed">Twitter app not installed</string>
     <string name="share_tiktok">Share TikTok</string>
+    <string name="log_tiktok">Log TikTok</string>
     <string name="tiktok_not_installed">TikTok app not installed</string>
     <string name="not_a_video">Latest post is not a video</string>
     <string name="twitter_service_description">Twitter posting automation</string>
