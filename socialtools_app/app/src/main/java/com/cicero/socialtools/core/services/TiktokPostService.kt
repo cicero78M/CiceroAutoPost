@@ -20,7 +20,10 @@ class TiktokPostService : AccessibilityService() {
 
     override fun onServiceConnected() {
         serviceInfo = AccessibilityServiceInfo().apply {
-            packageNames = arrayOf("com.zhiliaoapp.musically")
+            packageNames = arrayOf(
+                "com.zhiliaoapp.musically",
+                "com.ss.android.ugc.trill"
+            )
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                     AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
