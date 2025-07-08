@@ -23,7 +23,6 @@ import com.cicero.socialtools.R
 import com.cicero.socialtools.ui.LandingActivity
 import com.cicero.socialtools.core.services.TwitterPostService
 import com.cicero.socialtools.core.services.TiktokPostService
-import com.cicero.socialtools.core.services.TiktokLogService
 import com.cicero.socialtools.utils.AccessibilityUtils
 
 import com.github.instagram4j.instagram4j.IGClient
@@ -102,7 +101,6 @@ class InstagramToolsActivity : AppCompatActivity() {
     private lateinit var targetLinkInput: AutoCompleteTextView
     private lateinit var targetAdapter: android.widget.ArrayAdapter<String>
     private val targetLinks = mutableSetOf<String>()
-    private lateinit var tiktokLoggerButton: Button
     private val repostedIds = mutableSetOf<String>()
     private val likedIds = mutableSetOf<String>()
     private val clientFile: File by lazy { File(this.filesDir, "igclient.ser") }
@@ -120,13 +118,6 @@ class InstagramToolsActivity : AppCompatActivity() {
             }
         }
     }
-    private val tiktokLogReceiver = object : android.content.BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == TiktokLogService.ACTION_LOG_FINISHED) {
-                appendLog("> TikTok log finished", animate = true)
-            }
-        }
-    }
 
     private fun ensureTwitterAccessibility() {
         if (!AccessibilityUtils.isServiceEnabled(this, TwitterPostService::class.java)) {
@@ -137,13 +128,6 @@ class InstagramToolsActivity : AppCompatActivity() {
 
     private fun ensureTiktokAccessibility() {
         if (!AccessibilityUtils.isServiceEnabled(this, TiktokPostService::class.java)) {
-            Toast.makeText(this, getString(R.string.enable_accessibility_service), Toast.LENGTH_LONG).show()
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
-    }
-
-    private fun ensureTiktokLogAccessibility() {
-        if (!AccessibilityUtils.isServiceEnabled(this, TiktokLogService::class.java)) {
             Toast.makeText(this, getString(R.string.enable_accessibility_service), Toast.LENGTH_LONG).show()
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -266,7 +250,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_instagram_tools)
         registerReceiver(tiktokReceiver, android.content.IntentFilter(TiktokPostService.ACTION_UPLOAD_FINISHED))
-        registerReceiver(tiktokLogReceiver, android.content.IntentFilter(TiktokLogService.ACTION_LOG_FINISHED))
         startPostService()
 
         setupViews()
@@ -305,7 +288,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         startButton = findViewById(R.id.button_start)
         shareTwitterButton = findViewById(R.id.button_share_twitter)
         shareTiktokButton = findViewById(R.id.button_share_tiktok)
-        tiktokLoggerButton = findViewById(R.id.button_tiktok_logger)
         likeCheckbox = findViewById(R.id.checkbox_like)
         repostCheckbox = findViewById(R.id.checkbox_repost)
         badgeView = profileView.findViewById(R.id.image_badge)
@@ -383,27 +365,6 @@ class InstagramToolsActivity : AppCompatActivity() {
                 if (post != null) {
                     if (post.isVideo) {
                         shareToTikTok(post)
-                    } else {
-                        Toast.makeText(this@InstagramToolsActivity, getString(R.string.not_a_video), Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this@InstagramToolsActivity, "Gagal mengambil post", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-        tiktokLoggerButton.setOnClickListener {
-            val target = targetLinkInput.text.toString().trim()
-            if (target.isBlank()) {
-                Toast.makeText(this, "Link target wajib diisi", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            targetUsername = parseUsername(target)
-            lifecycleScope.launch {
-                val post = fetchLatestPost(targetUsername)
-                if (post != null) {
-                    if (post.isVideo) {
-                        shareToTikTokLog(post)
                     } else {
                         Toast.makeText(this@InstagramToolsActivity, getString(R.string.not_a_video), Toast.LENGTH_SHORT).show()
                     }
@@ -1259,73 +1220,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         }
     }
 
-    private fun shareToTikTokLog(post: PostInfo) {
-        CoroutineScope(Dispatchers.IO).launch {
-            withContext(Dispatchers.Main) { appendLog(">>> share to TikTok (log)", animate = true) }
-            val files = downloadMedia(post)
-            if (files.isEmpty()) {
-                withContext(Dispatchers.Main) { appendLog("Error downloading media") }
-                return@launch
-            }
-            val video = files.first()
-            val uri = androidx.core.content.FileProvider.getUriForFile(
-                this@InstagramToolsActivity,
-                "${BuildConfig.APPLICATION_ID}.fileprovider",
-                video
-            )
-            val packages = arrayOf("com.zhiliaoapp.musically", "com.ss.android.ugc.trill")
-            val installedPackage = packages.firstOrNull { pkg ->
-                packageManager.getLaunchIntentForPackage(pkg) != null
-            }
-            if (installedPackage == null) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@InstagramToolsActivity,
-                        getString(R.string.tiktok_not_installed),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    appendLog("TikTok app not installed")
-                }
-                return@launch
-            }
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "video/*"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                setPackage(installedPackage)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("caption", post.caption ?: "")
-            clipboard.setPrimaryClip(clip)
-            val pm = packageManager
-            val targets = pm.queryIntentActivities(intent, 0)
-            val videoActivity = targets.firstOrNull { info ->
-                info.loadLabel(pm).toString().contains("video", ignoreCase = true)
-            }
-            if (videoActivity != null) {
-                intent.component = ComponentName(
-                    videoActivity.activityInfo.packageName,
-                    videoActivity.activityInfo.name
-                )
-            }
-            delay(3000)
-            withContext(Dispatchers.Main) {
-                ensureTiktokLogAccessibility()
-                appendLog("> launching TikTok", animate = true)
-                try {
-                    startActivity(intent)
-                } catch (_: Exception) {
-                    Toast.makeText(
-                        this@InstagramToolsActivity,
-                        getString(R.string.tiktok_not_installed),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    appendLog("TikTok app not installed")
-                }
-            }
-        }
-    }
-
     private suspend fun uploadVideoWithRetry(
         client: IGClient,
         video: File,
@@ -1425,7 +1319,6 @@ class InstagramToolsActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         unregisterReceiver(tiktokReceiver)
-        unregisterReceiver(tiktokLogReceiver)
         super.onDestroy()
     }
 

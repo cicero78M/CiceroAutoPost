@@ -35,14 +35,6 @@
             android:layout_height="wrap_content"
             android:text="@string/share_tiktok"
             android:layout_margin="4dp" />
-
-        <!-- TikTok log button -->
-        <Button
-            android:id="@+id/button_tiktok_logger"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/log_tiktok"
-            android:layout_margin="4dp" />
     </LinearLayout>
 
     <LinearLayout
