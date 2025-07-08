@@ -53,13 +53,8 @@ class TiktokPostService : AccessibilityService() {
         val root = rootInActiveWindow ?: return
 
         if (!videoSelected) {
-            val videoKeywords = listOf("Video", "Next", "Selanjutnya", "Pilih")
-            var selectNode: AccessibilityNodeInfo? = null
-            for (k in videoKeywords) {
-                val nodes = root.findAccessibilityNodeInfosByText(k)
-                selectNode = nodes.firstOrNull { it.isClickable }
-                if (selectNode != null) break
-            }
+            val videoKeywords = listOf("Video", "Next", "Selanjutnya", "Berikutnya", "Pilih")
+            val selectNode = findClickableNodeByText(root, videoKeywords)
             if (selectNode != null) {
                 videoSelected = true
                 selectNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -84,12 +79,7 @@ class TiktokPostService : AccessibilityService() {
 
         if (hasClicked) return
         val keywords = listOf("Post", "Posting")
-        var node: AccessibilityNodeInfo? = null
-        for (k in keywords) {
-            val nodes = root.findAccessibilityNodeInfosByText(k)
-            node = nodes.firstOrNull { it.isClickable }
-            if (node != null) break
-        }
+        val node = findClickableNodeByText(root, keywords)
         if (node != null) {
             hasClicked = true
             node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
@@ -97,6 +87,22 @@ class TiktokPostService : AccessibilityService() {
             performGlobalAction(GLOBAL_ACTION_HOME)
             stopSelf()
         }
+    }
+
+    private fun findClickableNodeByText(root: AccessibilityNodeInfo, texts: List<String>): AccessibilityNodeInfo? {
+        for (t in texts) {
+            val nodes = root.findAccessibilityNodeInfosByText(t)
+            for (n in nodes) {
+                var current: AccessibilityNodeInfo? = n
+                while (current != null && !current.isClickable) {
+                    current = current.parent
+                }
+                if (current != null && current.isClickable) {
+                    return current
+                }
+            }
+        }
+        return null
     }
 
     private fun findEditText(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
