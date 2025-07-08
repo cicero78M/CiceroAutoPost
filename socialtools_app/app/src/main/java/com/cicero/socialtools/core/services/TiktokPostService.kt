@@ -77,7 +77,12 @@ class TiktokPostService : AccessibilityService() {
                     val args = Bundle()
                     args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
                     editNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-                    val newText = editNode.text?.toString()
+                    var newText = editNode.text?.toString()
+                    if (newText.isNullOrBlank() || newText != text.toString()) {
+                        editNode.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                        editNode.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+                        newText = editNode.text?.toString()
+                    }
                     if (!newText.isNullOrBlank() && newText == text.toString()) {
                         captionInserted = true
                         backPressed = false
@@ -125,7 +130,7 @@ class TiktokPostService : AccessibilityService() {
 
     private fun findEditText(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (node == null) return null
-        if ("android.widget.EditText" == node.className) return node
+        if ("android.widget.EditText" == node.className || node.isEditable) return node
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
             val result = findEditText(child)
