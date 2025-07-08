@@ -15,6 +15,7 @@ class TiktokPostService : AccessibilityService() {
     }
 
     private var hasClicked = false
+    private var videoSelected = false
     private val handler = Handler(Looper.getMainLooper())
     private val clickRunnable = Runnable { performClick() }
 
@@ -34,6 +35,7 @@ class TiktokPostService : AccessibilityService() {
         when (event?.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 hasClicked = false
+                videoSelected = false
                 handler.postDelayed(clickRunnable, 500)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
@@ -43,8 +45,24 @@ class TiktokPostService : AccessibilityService() {
     }
 
     private fun performClick() {
-        if (hasClicked) return
         val root = rootInActiveWindow ?: return
+
+        if (!videoSelected) {
+            val videoKeywords = listOf("Video", "Next", "Selanjutnya", "Pilih")
+            var selectNode: AccessibilityNodeInfo? = null
+            for (k in videoKeywords) {
+                val nodes = root.findAccessibilityNodeInfosByText(k)
+                selectNode = nodes.firstOrNull { it.isClickable }
+                if (selectNode != null) break
+            }
+            if (selectNode != null) {
+                videoSelected = true
+                selectNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                return
+            }
+        }
+
+        if (hasClicked) return
         val keywords = listOf("Post", "Posting")
         var node: AccessibilityNodeInfo? = null
         for (k in keywords) {
