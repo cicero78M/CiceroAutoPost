@@ -20,6 +20,7 @@ class TiktokPostService : AccessibilityService() {
     private var hasClicked = false
     private var videoSelected = false
     private var captionInserted = false
+    private var backPressed = false
     private val handler = Handler(Looper.getMainLooper())
     private val clickRunnable = Runnable { performClick() }
 
@@ -41,10 +42,11 @@ class TiktokPostService : AccessibilityService() {
                 hasClicked = false
                 videoSelected = false
                 captionInserted = false
-                handler.postDelayed(clickRunnable, 500)
+                backPressed = false
+                handler.postDelayed(clickRunnable, 5000)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                handler.postDelayed(clickRunnable, 200)
+                handler.postDelayed(clickRunnable, 5000)
             }
         }
     }
@@ -59,6 +61,10 @@ class TiktokPostService : AccessibilityService() {
                 videoSelected = true
                 selectNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
                 return
+            } else if (!backPressed) {
+                backPressed = true
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                return
             }
         }
 
@@ -71,9 +77,18 @@ class TiktokPostService : AccessibilityService() {
                     val args = Bundle()
                     args.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
                     editNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-                    captionInserted = true
+                    val newText = editNode.text?.toString()
+                    if (!newText.isNullOrBlank() && newText == text.toString()) {
+                        captionInserted = true
+                        backPressed = false
+                    }
                     return
                 }
+            }
+            if (!backPressed) {
+                backPressed = true
+                performGlobalAction(GLOBAL_ACTION_BACK)
+                return
             }
         }
 
@@ -86,6 +101,9 @@ class TiktokPostService : AccessibilityService() {
             sendBroadcast(Intent(ACTION_UPLOAD_FINISHED))
             performGlobalAction(GLOBAL_ACTION_HOME)
             stopSelf()
+        } else if (!backPressed) {
+            backPressed = true
+            performGlobalAction(GLOBAL_ACTION_BACK)
         }
     }
 
