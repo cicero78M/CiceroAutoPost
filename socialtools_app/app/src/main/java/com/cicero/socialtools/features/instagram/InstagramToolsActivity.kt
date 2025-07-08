@@ -3,6 +3,7 @@ package com.cicero.socialtools.features.instagram
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.ComponentName
 import android.net.Uri
 import android.provider.Settings
 import android.os.Bundle
@@ -1183,6 +1184,18 @@ class InstagramToolsActivity : AppCompatActivity() {
                 putExtra(Intent.EXTRA_STREAM, uri)
                 setPackage(installedPackage)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            // Prefer the TikTok share activity labeled "Video" if available
+            val pm = packageManager
+            val targets = pm.queryIntentActivities(intent, 0)
+            val videoActivity = targets.firstOrNull { info ->
+                info.loadLabel(pm).toString().contains("video", ignoreCase = true)
+            }
+            if (videoActivity != null) {
+                intent.component = ComponentName(
+                    videoActivity.activityInfo.packageName,
+                    videoActivity.activityInfo.name
+                )
             }
             delay(3000)
             withContext(Dispatchers.Main) {
