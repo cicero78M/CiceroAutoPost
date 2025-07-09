@@ -23,6 +23,7 @@ class TiktokPostService : AccessibilityService() {
     private var backPressed = false
     private val handler = Handler(Looper.getMainLooper())
     private val clickRunnable = Runnable { performClick() }
+    private val stepDelayMs = 5000L
 
     override fun onServiceConnected() {
         serviceInfo = AccessibilityServiceInfo().apply {
@@ -43,10 +44,10 @@ class TiktokPostService : AccessibilityService() {
                 videoSelected = false
                 captionInserted = false
                 backPressed = false
-                handler.postDelayed(clickRunnable, 5000)
+                handler.postDelayed(clickRunnable, stepDelayMs)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                handler.postDelayed(clickRunnable, 5000)
+                handler.postDelayed(clickRunnable, stepDelayMs)
             }
         }
     }
@@ -60,6 +61,7 @@ class TiktokPostService : AccessibilityService() {
             if (selectNode != null) {
                 videoSelected = true
                 selectNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                handler.postDelayed(clickRunnable, stepDelayMs)
                 return
             } else if (!backPressed) {
                 backPressed = true
@@ -86,15 +88,15 @@ class TiktokPostService : AccessibilityService() {
                     if (!newText.isNullOrBlank() && newText == text.toString()) {
                         captionInserted = true
                         backPressed = false
+                        handler.postDelayed(clickRunnable, stepDelayMs)
+                    } else {
+                        handler.postDelayed(clickRunnable, stepDelayMs)
                     }
                     return
                 }
             }
-            if (!backPressed) {
-                backPressed = true
-                performGlobalAction(GLOBAL_ACTION_BACK)
-                return
-            }
+            handler.postDelayed(clickRunnable, stepDelayMs)
+            return
         }
 
         if (hasClicked) return
