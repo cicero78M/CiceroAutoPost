@@ -1136,7 +1136,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                 setPackage("com.twitter.android")
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            delay(3000)
+            delay(5000)
             withContext(Dispatchers.Main) {
                 ensureTwitterAccessibility()
                 try {
@@ -1202,7 +1202,7 @@ class InstagramToolsActivity : AppCompatActivity() {
                     videoActivity.activityInfo.name
                 )
             }
-            delay(3000)
+            delay(5000)
             withContext(Dispatchers.Main) {
                 ensureTiktokAccessibility()
                 appendLog("> launching TikTok", animate = true)
@@ -1255,9 +1255,9 @@ class InstagramToolsActivity : AppCompatActivity() {
     private suspend fun showWaitingDots(duration: Long) {
         var remaining = duration
         while (remaining > 0) {
-            delay(3000)
+            delay(5000)
             appendLog(".", animate = false)
-            remaining -= 3000
+            remaining -= 5000
         }
     }
 
