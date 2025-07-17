@@ -269,7 +269,6 @@ class InstagramToolsActivity : AppCompatActivity() {
         followingView = profileView.findViewById(R.id.stat_following)
         profileView.findViewById<View>(R.id.text_nrp).visibility = View.GONE
         profileView.findViewById<View>(R.id.info_container).visibility = View.GONE
-        profileView.findViewById<Button>(R.id.button_logout).visibility = View.GONE
 
         // Removed Twitter and TikTok containers
         targetLinkInput = findViewById(R.id.input_target_link)
