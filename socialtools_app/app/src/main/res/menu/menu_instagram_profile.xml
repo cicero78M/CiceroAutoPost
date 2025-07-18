@@ -10,5 +10,10 @@
         android:icon="@drawable/ic_status_true"
         android:title="@string/accessibility_settings"
         android:showAsAction="never" />
+    <item
+        android:id="@+id/action_view_logs"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="View Log Data"
+        android:showAsAction="never" />
     <!-- Removed premium registration and confirmation actions -->
 </menu>

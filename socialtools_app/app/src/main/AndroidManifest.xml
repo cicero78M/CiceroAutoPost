@@ -27,6 +27,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.LoginActivity" android:exported="true" />
+        <activity android:name=".ui.LogDataActivity" android:exported="true" />
         <activity android:name=".features.instagram.InstagramToolsActivity" android:exported="true" />
         <service
             android:name=".core.services.PostService"

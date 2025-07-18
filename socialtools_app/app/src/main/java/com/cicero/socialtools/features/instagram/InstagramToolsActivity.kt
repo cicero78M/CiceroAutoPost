@@ -55,6 +55,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.File
+import com.cicero.socialtools.data.AppDatabase
+import com.cicero.socialtools.data.LogEntry
 import java.util.concurrent.Callable
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -111,6 +113,7 @@ class InstagramToolsActivity : AppCompatActivity() {
     private var targetUsername: String = "polres_ponorogo"
     private var isPremium: Boolean = false
     private var startTimeMs: Long = 0L
+    private val db by lazy { AppDatabase.get(this) }
     private val tiktokReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == TiktokPostService.ACTION_UPLOAD_FINISHED) {
@@ -517,27 +520,18 @@ class InstagramToolsActivity : AppCompatActivity() {
         }
     }
 
-    private fun getLogFileForUser(user: String): File {
-        return File(this.filesDir, "instalog_${user}.txt")
-    }
-
     private fun loadSavedLogs(user: String) {
         logContainer.removeAllViews()
-        val file = getLogFileForUser(user)
-        if (file.exists()) {
-            file.forEachLine { line ->
-                appendLog(line, appendToFile = false)
-            }
+        lifecycleScope.launch {
+            val logs = withContext(Dispatchers.IO) { db.logDao().logsForUser(user) }
+            logs.forEach { appendLog(it.message, appendToFile = false) }
         }
     }
 
     private fun clearLogs() {
         logContainer.removeAllViews()
         currentUsername?.let { user ->
-            val file = getLogFileForUser(user)
-            if (file.exists()) {
-                file.delete()
-            }
+            lifecycleScope.launch(Dispatchers.IO) { db.logDao().clearForUser(user) }
         }
     }
 
@@ -564,10 +558,11 @@ class InstagramToolsActivity : AppCompatActivity() {
         }
         if (appendToFile) {
             currentUsername?.let { user ->
-                try {
-                    getLogFileForUser(user).appendText(text + "\n")
-                } catch (_: Exception) {
-                    // ignore I/O errors
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        db.logDao().insert(LogEntry(user = user, message = text))
+                    } catch (_: Exception) {
+                    }
                 }
             }
         }
@@ -1310,6 +1305,10 @@ class InstagramToolsActivity : AppCompatActivity() {
             }
             R.id.action_accessibility_settings -> {
                 startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                true
+            }
+            R.id.action_view_logs -> {
+                startActivity(Intent(this, com.cicero.socialtools.ui.LogDataActivity::class.java))
                 true
             }
             else -> super.onOptionsItemSelected(item)
