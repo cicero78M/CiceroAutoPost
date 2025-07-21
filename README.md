@@ -42,3 +42,27 @@ see [docs/SETUP.md](docs/SETUP.md).
 
 Usage scenarios for basic and premium users are described in
 [docs/BASIC_PREMIUM_SCENARIO.md](docs/BASIC_PREMIUM_SCENARIO.md).
+
+## Local API Server
+
+A small Express server lives in `server/` to mimic the remote API. It handles
+routine tasks and the new **amplifikasi tugas khusus** feature so both the
+Android and web frontends can share the same endpoints.
+
+Run the server:
+
+```bash
+cd server
+npm install
+node index.js
+```
+
+Key endpoints:
+
+- `GET /api/routine-tasks` – list routine tasks
+- `POST /api/routine-tasks` – create routine tasks
+- `PUT /api/routine-tasks/:id` – update a routine task
+- `DELETE /api/routine-tasks/:id` – delete a routine task
+
+The **amplifikasi tugas khusus** routes mirror these but use the path
+`/api/amplifikasi-tugas-khusus`.

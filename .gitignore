@@ -3,3 +3,4 @@
 socialtools_app/.gradle/
 socialtools_app/build/
 socialtools_app/app/build/
+server/node_modules/
